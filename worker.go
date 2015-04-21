@@ -8,10 +8,18 @@ var (
 	ErrTimeout = errors.New("timeout")
 )
 
-type Job interface {
+type Runner interface {
 	Type() string
-	Make(*Args) (Job, error)
 	Run() error
+}
+
+type Factory interface {
+	Make(*Args) (Job, error)
+}
+
+type Job interface {
+	Runner
+	Factory
 }
 
 type Queue interface {
