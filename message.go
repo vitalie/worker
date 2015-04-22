@@ -1,20 +1,35 @@
 package worker
 
 import (
+	"strconv"
+
 	"github.com/bitly/go-simplejson"
 )
 
 type envelope struct {
-	Class string      `json:"class"`
-	Args  interface{} `json:"args"`
+	Type string      `json:"type"`
+	Args interface{} `json:"args"`
 }
 
 type data struct {
 	*simplejson.Json
 }
 
+func (d *data) String() string {
+	json, err := d.MarshalJSON()
+	if err != nil {
+		return "MarshalJSON: " + err.Error()
+	}
+	return string(json)
+}
+
+type response struct {
+	Msg *Message
+	Err error
+}
+
 type Args struct {
-	*simplejson.Json
+	*data
 }
 
 type Message struct {
@@ -22,23 +37,31 @@ type Message struct {
 	*data
 }
 
-func NewMessage(d []byte) (*Message, error) {
-	json, err := toJson(d)
+func NewMessage(id uint64, body []byte) (*Message, error) {
+	json, err := toJson(body)
 	if err != nil {
 		return nil, err
 	}
-	return &Message{data: &data{json}}, nil
+	return &Message{ID: id, data: &data{json}}, nil
 }
 
 func (m *Message) Type() string {
-	return m.Get("class").MustString()
+	return m.Get("type").MustString("<unknown>")
 }
 
 func (m *Message) Args() *Args {
 	if args, ok := m.CheckGet("args"); ok {
-		return &Args{args}
+		return &Args{&data{args}}
 	} else {
-		data, _ := toJson([]byte("[]"))
-		return &Args{data}
+		json, _ := toJson([]byte("[]"))
+		return &Args{&data{json}}
 	}
+}
+
+func (m *Message) String() string {
+	if m == nil {
+		return "<nil>"
+	}
+
+	return "&{" + strconv.FormatUint(m.ID, 10) + ", " + m.data.String() + "}"
 }

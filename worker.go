@@ -1,11 +1,7 @@
 package worker
 
 import (
-	"errors"
-)
-
-var (
-	ErrTimeout = errors.New("timeout")
+	"golang.org/x/net/context"
 )
 
 type Runner interface {
@@ -23,7 +19,9 @@ type Job interface {
 }
 
 type Queue interface {
-	Put(Job) error
-	Get() (*Message, error)
-	Del(*Message) error
+	Put(context.Context, Job) error
+	Get(context.Context) (*Message, error)
+	Done(context.Context, *Message) error
+	Fail(context.Context, *Message) error
+	Size(context.Context) (uint64, error)
 }

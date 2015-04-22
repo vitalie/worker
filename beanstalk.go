@@ -2,29 +2,33 @@ package worker
 
 import (
 	"encoding/json"
+	"fmt"
 	"net"
+	"strconv"
 	"time"
 
 	"github.com/kr/beanstalk"
+	"golang.org/x/net/context"
 )
 
 const (
-	DefaultHost = "localhost"
-	DefaultPort = "11300"
-	DefaultTube = "default"
-	DefaultPrio = 100
+	defaultHost = "localhost"
+	defaultPort = "11300"
+	defaultTube = "default"
+	defaultPrio = 100
+
+	sizeKey = "current-jobs-urgent"
 )
 
 var (
-	DefaultTTR     time.Duration = 60 * time.Second
-	DefaultTimeout time.Duration = 24 * 365 * time.Hour
+	defaultTTR     time.Duration = 60 * time.Second
+	defaultTimeout time.Duration = 1 * time.Second
 )
 
 type BeanstalkQueue struct {
 	host string
 	port string
 	name string
-
 	conn *beanstalk.Conn
 	tube *beanstalk.Tube
 	tset *beanstalk.TubeSet
@@ -32,9 +36,9 @@ type BeanstalkQueue struct {
 
 func NewBeanstalkQueue(opts ...func(*BeanstalkQueue)) (*BeanstalkQueue, error) {
 	q := &BeanstalkQueue{
-		host: DefaultHost,
-		port: DefaultPort,
-		name: DefaultTube,
+		host: defaultHost,
+		port: defaultPort,
+		name: defaultTube,
 	}
 
 	addr := net.JoinHostPort(q.host, q.port)
@@ -55,10 +59,10 @@ func NewBeanstalkQueue(opts ...func(*BeanstalkQueue)) (*BeanstalkQueue, error) {
 	return q, nil
 }
 
-func (q *BeanstalkQueue) Put(j Job) error {
+func (q *BeanstalkQueue) Put(ctx context.Context, j Job) error {
 	job := &envelope{
-		Class: j.Type(),
-		Args:  j,
+		Type: j.Type(),
+		Args: j,
 	}
 
 	body, err := json.Marshal(job)
@@ -66,7 +70,7 @@ func (q *BeanstalkQueue) Put(j Job) error {
 		return err
 	}
 
-	_, err = q.tube.Put(body, DefaultPrio, 0, DefaultTTR)
+	_, err = q.tube.Put(body, defaultPrio, 0, defaultTTR)
 	if err != nil {
 		return err
 	}
@@ -74,24 +78,65 @@ func (q *BeanstalkQueue) Put(j Job) error {
 	return nil
 }
 
-func (q *BeanstalkQueue) Get() (*Message, error) {
-	id, payload, err := q.tset.Reserve(DefaultTimeout)
-	if err != nil {
-		if cerr, ok := err.(beanstalk.ConnError); ok && cerr.Err == beanstalk.ErrTimeout {
-			return nil, ErrTimeout
+func (q *BeanstalkQueue) Get(ctx context.Context) (*Message, error) {
+	c := make(chan *response, 1)
+
+	go func() {
+		defer close(c)
+
+		id, payload, err := q.tset.Reserve(defaultTimeout)
+		if err != nil {
+			if cerr, ok := err.(beanstalk.ConnError); ok && cerr.Err == beanstalk.ErrTimeout {
+				c <- &response{Err: &WorkerError{Err: "timeout", IsTimeout: true}}
+				return
+			}
+			c <- &response{Err: err}
+			return
 		}
-		return nil, err
-	}
 
-	msg, err := NewMessage(payload)
-	if err != nil {
-		return nil, err
-	}
-	msg.ID = id
+		msg, err := NewMessage(id, payload)
+		if err != nil {
+			c <- &response{Err: err}
+			return
+		}
 
-	return msg, nil
+		c <- &response{Msg: msg}
+		return
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case resp := <-c:
+		return resp.Msg, resp.Err
+	}
 }
 
-func (q *BeanstalkQueue) Del(*Message) error {
-	return nil
+func (q *BeanstalkQueue) Done(ctx context.Context, m *Message) error {
+	return q.conn.Delete(m.ID)
+}
+
+func (q *BeanstalkQueue) Fail(ctx context.Context, m *Message) error {
+	return q.conn.Bury(m.ID, defaultPrio)
+}
+
+func (q *BeanstalkQueue) Size(ctx context.Context) (uint64, error) {
+	var size uint64
+
+	dict, err := q.tube.Stats()
+	if err != nil {
+		return 0, err
+	}
+
+	v, ok := dict[sizeKey]
+	if !ok {
+		return 0, fmt.Errorf("worker: bad size %v", v)
+	}
+
+	size, err = strconv.ParseUint(v, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return size, nil
 }
