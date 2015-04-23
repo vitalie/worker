@@ -7,6 +7,8 @@ import (
 	"golang.org/x/net/context"
 )
 
+// MemoryQueue represents an ordered queue,
+// this queue is used in unit tests only.
 type MemoryQueue struct {
 	count uint64
 	l     []*worker.Message
