@@ -1,5 +1,9 @@
 package worker
 
+import (
+	"fmt"
+)
+
 type WorkerError struct {
 	Err       string
 	IsTimeout bool
@@ -13,4 +17,12 @@ func (e *WorkerError) Error() string {
 	}
 
 	return "worker: " + e.Err
+}
+
+func NewWorkerError(msg string) error {
+	return &WorkerError{Err: msg}
+}
+func NewWorkerErrorFmt(format string, args ...interface{}) error {
+	return NewWorkerError(fmt.Sprintf(format, args...))
+
 }
