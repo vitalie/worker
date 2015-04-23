@@ -5,7 +5,6 @@ import (
 )
 
 type Runner interface {
-	Type() string
 	Run() error
 }
 

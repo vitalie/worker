@@ -60,8 +60,13 @@ func NewBeanstalkQueue(opts ...func(*BeanstalkQueue)) (*BeanstalkQueue, error) {
 }
 
 func (q *BeanstalkQueue) Put(ctx context.Context, j Job) error {
+	typ, err := structType(j)
+	if err != nil {
+		return err
+	}
+
 	job := &envelope{
-		Type: j.Type(),
+		Type: typ,
 		Args: j,
 	}
 

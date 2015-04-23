@@ -10,17 +10,13 @@ import (
 
 var c chan int = make(chan int)
 
-type AddJob struct {
+type addJob struct {
 	X, Y int
 	out  chan<- int
 }
 
-func (j *AddJob) Type() string {
-	return "add"
-}
-
-func (j *AddJob) Make(args *worker.Args) (worker.Job, error) {
-	job := &AddJob{
+func (j *addJob) Make(args *worker.Args) (worker.Job, error) {
+	job := &addJob{
 		X:   args.Get("X").MustInt(-1),
 		Y:   args.Get("Y").MustInt(-1),
 		out: c,
@@ -28,13 +24,13 @@ func (j *AddJob) Make(args *worker.Args) (worker.Job, error) {
 	return job, nil
 }
 
-func (j *AddJob) Run() error {
+func (j *addJob) Run() error {
 	j.out <- j.X + j.Y
 	return nil
 }
 
 func TestBeanstalkQueue(t *testing.T) {
-	j := &AddJob{X: 1, Y: 2}
+	j := &addJob{X: 1, Y: 2}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -68,8 +64,9 @@ func TestBeanstalkQueue(t *testing.T) {
 		t.Error(err)
 	}
 
-	if msg.Type() != j.Type() {
-		t.Errorf("expecting %q, got %q", j.Type(), msg.Type())
+	typ := "addJob"
+	if msg.Type() != typ {
+		t.Errorf("expecting %q, got %q", typ, msg.Type())
 	}
 
 	x := msg.Args().Get("X").MustInt(-1)
@@ -106,12 +103,12 @@ func TestPool(t *testing.T) {
 	pool := worker.NewPool(
 		worker.SetQueue(q),
 	)
-	pool.Add(&AddJob{})
+	pool.Add(&addJob{})
 
 	go pool.Run(ctx)
 
 	for _, tt := range sumtests {
-		if err := q.Put(ctx, &AddJob{X: tt.x, Y: tt.y}); err != nil {
+		if err := q.Put(ctx, &addJob{X: tt.x, Y: tt.y}); err != nil {
 			t.Fatal(err)
 		}
 

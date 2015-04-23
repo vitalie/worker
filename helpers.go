@@ -1,6 +1,10 @@
 package worker
 
 import (
+	"fmt"
+	"reflect"
+	"strings"
+
 	"github.com/bitly/go-simplejson"
 )
 
@@ -10,4 +14,26 @@ func toJson(data []byte) (*simplejson.Json, error) {
 	} else {
 		return json, nil
 	}
+}
+
+func structType(j Job) (string, error) {
+	typ := reflect.TypeOf(j)
+
+	// If job is a pointer get the type
+	// of the dereferenced object.
+	if typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+
+	if typ.Kind() != reflect.Struct {
+		return "", fmt.Errorf("worker: not a struct")
+	}
+
+	items := strings.Split(typ.String(), ".")
+
+	if len(items) > 0 {
+		return items[len(items)-1], nil
+	}
+
+	return "", fmt.Errorf("worker: bad struct name")
 }

@@ -48,10 +48,15 @@ func NewPool(opts ...func(*Pool)) *Pool {
 }
 
 func (p *Pool) Add(j Job) error {
-	if _, ok := p.mux[j.Type()]; ok {
-		return fmt.Errorf("factory %q exists already", j.Type())
+	typ, err := structType(j)
+	if err != nil {
+		return err
 	}
-	p.mux[j.Type()] = j
+
+	if _, ok := p.mux[typ]; ok {
+		return fmt.Errorf("factory %q exists already", typ)
+	}
+	p.mux[typ] = j
 	return nil
 }
 
