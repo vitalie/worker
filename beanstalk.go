@@ -60,12 +60,12 @@ func NewBeanstalkQueue(opts ...func(*BeanstalkQueue)) (*BeanstalkQueue, error) {
 }
 
 func (q *BeanstalkQueue) Put(ctx context.Context, j Job) error {
-	typ, err := structType(j)
+	typ, err := StructType(j)
 	if err != nil {
 		return err
 	}
 
-	job := &envelope{
+	job := &Envelope{
 		Type: typ,
 		Args: j,
 	}
@@ -92,7 +92,7 @@ func (q *BeanstalkQueue) Get(ctx context.Context) (*Message, error) {
 		id, payload, err := q.tset.Reserve(defaultTimeout)
 		if err != nil {
 			if cerr, ok := err.(beanstalk.ConnError); ok && cerr.Err == beanstalk.ErrTimeout {
-				c <- &response{Err: &WorkerError{Err: "timeout", IsTimeout: true}}
+				c <- &response{Err: &Error{Err: "timeout", IsTimeout: true}}
 				return
 			}
 			c <- &response{Err: err}

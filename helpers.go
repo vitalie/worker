@@ -16,7 +16,7 @@ func toJson(data []byte) (*simplejson.Json, error) {
 	}
 }
 
-func structType(v interface{}) (string, error) {
+func StructType(v interface{}) (string, error) {
 	typ := reflect.TypeOf(v)
 
 	// If job is a pointer get the type

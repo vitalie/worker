@@ -30,6 +30,10 @@ func (j *addJob) Run() error {
 }
 
 func TestBeanstalkQueue(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
+
 	j := &addJob{X: 1, Y: 2}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -86,11 +90,7 @@ func TestPool(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	q, err := worker.NewBeanstalkQueue()
-	if err != nil {
-		t.Error(err)
-	}
-
+	q := NewMemoryQueue()
 	var sumtests = []struct {
 		x, y int
 		want int

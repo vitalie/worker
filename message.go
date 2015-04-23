@@ -6,7 +6,7 @@ import (
 	"github.com/bitly/go-simplejson"
 )
 
-type envelope struct {
+type Envelope struct {
 	Type string      `json:"type"`
 	Args interface{} `json:"args"`
 }

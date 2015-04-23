@@ -4,14 +4,14 @@ import (
 	"fmt"
 )
 
-type WorkerError struct {
+type Error struct {
 	Err       string
 	IsTimeout bool
 }
 
-func (e *WorkerError) Timeout() bool { return e.IsTimeout }
+func (e *Error) Timeout() bool { return e.IsTimeout }
 
-func (e *WorkerError) Error() string {
+func (e *Error) Error() string {
 	if e == nil {
 		return "<nil>"
 	}
@@ -19,10 +19,10 @@ func (e *WorkerError) Error() string {
 	return "worker: " + e.Err
 }
 
-func NewWorkerError(msg string) error {
-	return &WorkerError{Err: msg}
+func NewError(msg string) error {
+	return &Error{Err: msg}
 }
-func NewWorkerErrorFmt(format string, args ...interface{}) error {
-	return NewWorkerError(fmt.Sprintf(format, args...))
+func NewErrorFmt(format string, args ...interface{}) error {
+	return NewError(fmt.Sprintf(format, args...))
 
 }

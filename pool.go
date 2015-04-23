@@ -59,13 +59,13 @@ func NewPool(opts ...func(*Pool)) *Pool {
 
 // Add registers a new job factory.
 func (p *Pool) Add(f Factory) error {
-	typ, err := structType(f)
+	typ, err := StructType(f)
 	if err != nil {
 		return err
 	}
 
 	if _, ok := p.mux[typ]; ok {
-		return NewWorkerErrorFmt("factory %q exists already", typ)
+		return NewErrorFmt("factory %q exists already", typ)
 	}
 	p.mux[typ] = f
 	return nil
@@ -121,7 +121,7 @@ func (p *Pool) Start(ctx context.Context) error {
 	for {
 		msg, err := p.queue.Get(ctx)
 		if err != nil {
-			if wkerr, ok := err.(*WorkerError); ok && wkerr.Timeout() {
+			if wkerr, ok := err.(*Error); ok && wkerr.Timeout() {
 				continue
 			}
 			return err
@@ -176,16 +176,16 @@ func (p *Pool) Exec(sw StatusWriter, fact string, args *Args) {
 func (p *Pool) execute(fact string, args *Args) error {
 	f, ok := p.mux[fact]
 	if !ok {
-		return NewWorkerErrorFmt("bad type: %v", fact)
+		return NewErrorFmt("bad type: %v", fact)
 	}
 
 	j, err := f.Make(args)
 	if err != nil {
-		return NewWorkerErrorFmt("make: %v", err)
+		return NewErrorFmt("make: %v", err)
 	}
 
 	if err := j.Run(); err != nil {
-		return NewWorkerErrorFmt("run: %v", err)
+		return NewErrorFmt("run: %v", err)
 	}
 
 	return nil
