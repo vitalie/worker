@@ -2,8 +2,6 @@
 
 An experimental background jobs processor using Beanstalk queue.
 
-## TODO
-
 ## Contributing
 
 1. Fork it
