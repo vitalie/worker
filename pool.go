@@ -102,18 +102,18 @@ func (p *Pool) worker(ctx context.Context, in chan *Message) {
 			case err := <-c:
 				if err != nil {
 					p.logger.Println(msg, "...", err)
-					if err := p.queue.Fail(ctx, msg); err != nil {
+					if err := p.queue.Reject(ctx, msg); err != nil {
 						p.logger.Println(err)
 					}
 				} else {
 					p.logger.Println(msg, "...", "OK")
-					if err := p.queue.Done(ctx, msg); err != nil {
+					if err := p.queue.Delete(ctx, msg); err != nil {
 						p.logger.Println(err)
 					}
 				}
 			}
 		} else {
-			if err := p.queue.Fail(ctx, msg); err != nil {
+			if err := p.queue.Reject(ctx, msg); err != nil {
 				p.logger.Println(err)
 			}
 		}

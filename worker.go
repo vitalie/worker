@@ -21,7 +21,7 @@ type Job interface {
 type Queue interface {
 	Put(context.Context, Job) error
 	Get(context.Context) (*Message, error)
-	Done(context.Context, *Message) error
-	Fail(context.Context, *Message) error
+	Delete(context.Context, *Message) error
+	Reject(context.Context, *Message) error
 	Size(context.Context) (uint64, error)
 }

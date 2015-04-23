@@ -74,7 +74,7 @@ func TestBeanstalk(t *testing.T) {
 		t.Error(msg.Args().Get("X"))
 	}
 
-	err = q.Done(ctx, msg)
+	err = q.Delete(ctx, msg)
 	if err != nil {
 		t.Error(err)
 	}

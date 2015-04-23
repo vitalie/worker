@@ -112,11 +112,11 @@ func (q *BeanstalkQueue) Get(ctx context.Context) (*Message, error) {
 	}
 }
 
-func (q *BeanstalkQueue) Done(ctx context.Context, m *Message) error {
+func (q *BeanstalkQueue) Delete(ctx context.Context, m *Message) error {
 	return q.conn.Delete(m.ID)
 }
 
-func (q *BeanstalkQueue) Fail(ctx context.Context, m *Message) error {
+func (q *BeanstalkQueue) Reject(ctx context.Context, m *Message) error {
 	return q.conn.Bury(m.ID, defaultPrio)
 }
 
