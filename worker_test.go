@@ -33,13 +33,18 @@ func (j *AddJob) Run() error {
 	return nil
 }
 
-func TestBeanstalk(t *testing.T) {
+func TestBeanstalkQueue(t *testing.T) {
+	j := &AddJob{X: 1, Y: 2}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	j := &AddJob{X: 1, Y: 2}
-
 	q, err := worker.NewBeanstalkQueue()
+	if err != nil {
+		t.Error(err)
+	}
+
+	s1, err := q.Size(ctx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -49,13 +54,13 @@ func TestBeanstalk(t *testing.T) {
 		t.Error(err)
 	}
 
-	size, err := q.Size(ctx)
+	s2, err := q.Size(ctx)
 	if err != nil {
 		t.Error(err)
 	}
 
-	if size != 1 {
-		t.Errorf("expecting size to be 1, got %v", size)
+	if s2 < s1+1 {
+		t.Errorf("expecting size to be %v, got %v", s1+1, s2)
 	}
 
 	msg, err := q.Get(ctx)
