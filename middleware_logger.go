@@ -15,7 +15,7 @@ func NewLogger() *Logger {
 	return &Logger{log.New(os.Stdout, "[worker] ", 0)}
 }
 
-func (l *Logger) Exec(sw StatusWriter, fact string, args *Args, next FactoryRunner) {
+func (l *Logger) Exec(sw StatusWriter, fact string, args *Args, next JobRunner) {
 	jinfo := fact + " " + args.String()
 	start := time.Now()
 

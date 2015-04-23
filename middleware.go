@@ -1,14 +1,14 @@
 package worker
 
-type FactoryRunner func(StatusWriter, string, *Args)
+type JobRunner func(sw StatusWriter, fact string, args *Args)
 
 type Handler interface {
-	Exec(StatusWriter, string, *Args, FactoryRunner)
+	Exec(sw StatusWriter, fact string, args *Args, next JobRunner)
 }
 
-type HandlerFunc func(StatusWriter, string, *Args, FactoryRunner)
+type HandlerFunc func(sw StatusWriter, fact string, args *Args, next JobRunner)
 
-func (h HandlerFunc) Exec(sw StatusWriter, fact string, args *Args, next FactoryRunner) {
+func (h HandlerFunc) Exec(sw StatusWriter, fact string, args *Args, next JobRunner) {
 	h(sw, fact, args, next)
 }
 

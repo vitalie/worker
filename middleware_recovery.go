@@ -20,7 +20,7 @@ func NewRecovery() *Recovery {
 	}
 }
 
-func (r *Recovery) Exec(sw StatusWriter, fact string, args *Args, next FactoryRunner) {
+func (r *Recovery) Exec(sw StatusWriter, fact string, args *Args, next JobRunner) {
 	defer func() {
 		if err := recover(); err != nil {
 			stack := make([]byte, r.StackSize)

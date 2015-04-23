@@ -92,7 +92,7 @@ func (p *Pool) build(hs []Handler) middleware {
 // execute the job without calling next middleware.
 func (p *Pool) last() middleware {
 	return middleware{
-		HandlerFunc(func(sw StatusWriter, fact string, args *Args, next FactoryRunner) {
+		HandlerFunc(func(sw StatusWriter, fact string, args *Args, next JobRunner) {
 			err := p.execute(fact, args)
 			sw.Set(err)
 		}),
