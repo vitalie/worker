@@ -1,4 +1,4 @@
-# Worker [![Travis CI](https://travis-ci.org/vitalie/worker.svg?branch=master)] [![GoDoc](https://godoc.org/github.com/vitalie/worker?status.svg)](http://godoc.org/github.com/vitalie/worker)
+# Worker [![Travis CI](https://travis-ci.org/vitalie/worker.svg?branch=master)](https://travis-ci.org/vitalie/worker) [![GoDoc](https://godoc.org/github.com/vitalie/worker?status.svg)](http://godoc.org/github.com/vitalie/worker)
 
 An experimental background jobs processor using Beanstalkd queue.
 
