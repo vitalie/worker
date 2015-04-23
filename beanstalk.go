@@ -17,7 +17,7 @@ const (
 	defaultTube = "default"
 	defaultPrio = 100
 
-	sizeKey = "current-jobs-urgent"
+	sizeKey = "current-jobs-ready"
 )
 
 var (
