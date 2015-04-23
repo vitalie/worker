@@ -21,13 +21,13 @@ type Pool struct {
 	logger *log.Logger
 }
 
-func SetPoolQueue(q Queue) func(*Pool) {
+func SetQueue(q Queue) func(*Pool) {
 	return func(p *Pool) {
 		p.queue = q
 	}
 }
 
-func SetPoolWorkers(count int) func(*Pool) {
+func SetWorkers(count int) func(*Pool) {
 	return func(p *Pool) {
 		p.count = count
 	}

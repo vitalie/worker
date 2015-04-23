@@ -99,7 +99,7 @@ func TestPool(t *testing.T) {
 	}
 
 	pool := worker.NewPool(
-		worker.SetPoolQueue(q),
+		worker.SetQueue(q),
 	)
 	pool.Add(&AddJob{})
 
