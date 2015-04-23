@@ -14,8 +14,8 @@ const (
 
 // Pool represents a pool of workers connected to a queue.
 type Pool struct {
-	start int
-	queue Queue
+	count int   // workers count
+	queue Queue // input queue
 
 	middleware middleware
 	handlers   []Handler
@@ -33,14 +33,14 @@ func SetQueue(q Queue) func(*Pool) {
 // SetWorkers configures the pool concurrency.
 func SetWorkers(n int) func(*Pool) {
 	return func(p *Pool) {
-		p.start = n
+		p.count = n
 	}
 }
 
 // NewPool returns a new Pool instance.
 func NewPool(opts ...func(*Pool)) *Pool {
 	pool := &Pool{
-		start:    DefaultWorkersCount,
+		count:    DefaultWorkersCount,
 		mux:      map[string]Factory{},
 		logger:   log.New(os.Stdout, "[worker] ", 0),
 		handlers: []Handler{NewRecovery(), NewLogger()},
@@ -100,8 +100,8 @@ func (p *Pool) last() middleware {
 	}
 }
 
-// Run starts processing jobs from the queue.
-func (p *Pool) Run(ctx context.Context) error {
+// Start starts processing jobs from the queue.
+func (p *Pool) Start(ctx context.Context) error {
 	var wg sync.WaitGroup
 
 	// Fan-out channel.
@@ -109,8 +109,8 @@ func (p *Pool) Run(ctx context.Context) error {
 	defer close(c)
 
 	// Start workers.
-	wg.Add(p.start)
-	for i := 0; i < p.start; i++ {
+	wg.Add(p.count)
+	for i := 0; i < p.count; i++ {
 		go func() {
 			defer wg.Done()
 			p.worker(ctx, c)

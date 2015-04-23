@@ -105,7 +105,7 @@ func TestPool(t *testing.T) {
 	)
 	pool.Add(&addJob{})
 
-	go pool.Run(ctx)
+	go pool.Start(ctx)
 
 	for _, tt := range sumtests {
 		if err := q.Put(ctx, &addJob{X: tt.x, Y: tt.y}); err != nil {
