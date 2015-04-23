@@ -2,6 +2,7 @@ package worker_test
 
 import (
 	"encoding/json"
+	"sync"
 
 	"github.com/vitalie/worker"
 	"golang.org/x/net/context"
@@ -10,6 +11,7 @@ import (
 // MemoryQueue represents an ordered queue,
 // this queue is used in unit tests only.
 type MemoryQueue struct {
+	sync.Mutex
 	count uint64
 	l     []*worker.Message
 }
@@ -21,6 +23,9 @@ func NewMemoryQueue() worker.Queue {
 }
 
 func (q *MemoryQueue) Put(ctx context.Context, j worker.Job) error {
+	q.Lock()
+	defer q.Unlock()
+
 	typ, err := worker.StructType(j)
 	if err != nil {
 		return err
@@ -47,6 +52,9 @@ func (q *MemoryQueue) Put(ctx context.Context, j worker.Job) error {
 }
 
 func (q *MemoryQueue) Get(ctx context.Context) (*worker.Message, error) {
+	q.Lock()
+	defer q.Unlock()
+
 	if len(q.l) == 0 {
 		return nil, &worker.Error{Err: "timeout", IsTimeout: true}
 	}
@@ -57,6 +65,9 @@ func (q *MemoryQueue) Get(ctx context.Context) (*worker.Message, error) {
 }
 
 func (q *MemoryQueue) Delete(ctx context.Context, msg *worker.Message) error {
+	q.Lock()
+	defer q.Unlock()
+
 	var lst []*worker.Message
 	for _, m := range q.l {
 		if m.ID != msg.ID {
@@ -71,6 +82,9 @@ func (q *MemoryQueue) Reject(ctx context.Context, msg *worker.Message) error {
 }
 
 func (q *MemoryQueue) Size(ctx context.Context) (uint64, error) {
+	q.Lock()
+	defer q.Unlock()
+
 	size := len(q.l)
 	return uint64(size), nil
 }
