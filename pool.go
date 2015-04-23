@@ -14,7 +14,7 @@ const (
 )
 
 type Pool struct {
-	count int
+	start int
 	queue Queue
 
 	mux    map[string]Job
@@ -27,15 +27,15 @@ func SetQueue(q Queue) func(*Pool) {
 	}
 }
 
-func SetWorkers(count int) func(*Pool) {
+func SetWorkers(n int) func(*Pool) {
 	return func(p *Pool) {
-		p.count = count
+		p.start = n
 	}
 }
 
 func NewPool(opts ...func(*Pool)) *Pool {
 	pool := &Pool{
-		count:  DefaultWorkersCount,
+		start:  DefaultWorkersCount,
 		mux:    map[string]Job{},
 		logger: log.New(os.Stdout, "[worker] ", 0),
 	}
@@ -67,8 +67,8 @@ func (p *Pool) Run(ctx context.Context) error {
 	defer close(c)
 
 	// Start workers.
-	wg.Add(p.count)
-	for i := 0; i < p.count; i++ {
+	wg.Add(p.start)
+	for i := 0; i < p.start; i++ {
 		go func() {
 			defer wg.Done()
 			p.worker(ctx, c)
