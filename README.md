@@ -2,6 +2,10 @@
 
 An experimental background jobs processor using Beanstalk queue.
 
+## TODO
+
+- Amazon SQS Adapter
+
 ## Contributing
 
 1. Fork it
