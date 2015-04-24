@@ -20,10 +20,13 @@ import (
 	"golang.org/x/net/context"
 )
 
+// addJob represents a simple background job.
 type addJob struct {
 	X, Y int
 }
 
+// Make implements Factory interface, it's job is to
+// initialize the struct with data received from the job queue.
 func (j *addJob) Make(args *worker.Args) (worker.Job, error) {
 	job := &addJob{
 		X: args.Get("X").MustInt(-1),
@@ -32,6 +35,9 @@ func (j *addJob) Make(args *worker.Args) (worker.Job, error) {
 	return job, nil
 }
 
+// Run implements Runner interface, this is the
+// function which is executed by background processor
+// after initialization.
 func (j *addJob) Run() error {
 	sum := j.X + j.Y
 	log.Printf("sum(%d, %d) = %d\n", j.X, j.Y, sum)
@@ -42,6 +48,10 @@ func main() {
 	ctx := context.Background()
 
 	q := worker.NewMemoryQueue()
+
+	// Put job in the queue, visible/public fields
+	// of the struct are serialized in JSON format
+	// along with struct name.
 	q.Put(ctx, &addJob{2, 3})
 
 	// Create a worker pool with default settings,
