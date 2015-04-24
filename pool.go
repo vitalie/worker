@@ -100,8 +100,8 @@ func (p *Pool) last() middleware {
 	}
 }
 
-// Start starts processing jobs from the queue.
-func (p *Pool) Start(ctx context.Context) error {
+// Run starts processing jobs from the queue.
+func (p *Pool) Run(ctx context.Context) error {
 	var wg sync.WaitGroup
 
 	// Fan-out channel.
