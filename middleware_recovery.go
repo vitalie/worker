@@ -23,11 +23,12 @@ func NewRecovery() *Recovery {
 func (r *Recovery) Exec(sw StatusWriter, fact string, args *Args, next JobRunner) {
 	defer func() {
 		if err := recover(); err != nil {
+			jinfo := fact + " " + args.String()
 			stack := make([]byte, r.StackSize)
 			stack = stack[:runtime.Stack(stack, r.StackAll)]
 
-			f := "PANIC: %s\n%s"
-			r.Logger.Printf(f, err, stack)
+			f := "%s: PANIC: %s\n%s"
+			r.Logger.Printf(f, jinfo, err, stack)
 		}
 	}()
 
