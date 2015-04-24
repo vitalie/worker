@@ -45,7 +45,7 @@ func main() {
 	q.Put(ctx, &addJob{2, 3})
 
 	// Create a worker pool with default settings,
-	// common middlewares (Recovery, Logger) and
+	// common middlewares (Recovery, Logger)
 	// using the `q` queue.
 	pool := worker.NewPool(
 		worker.SetQueue(q),
