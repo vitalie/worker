@@ -14,41 +14,48 @@ $ go get -u github.com/vitalie/worker
 package main
 
 import (
-    "fmt"
+	"log"
 
-    "github.com/vitalie/worker"
+	"github.com/vitalie/worker"
+	"golang.org/x/net/context"
 )
 
 type addJob struct {
-    X, Y int
+	X, Y int
 }
 
 func (j *addJob) Make(args *worker.Args) (worker.Job, error) {
-    job := &addJob{
-        X:   args.Get("X").MustInt(-1),
-        Y:   args.Get("Y").MustInt(-1),
-        out: c,
-    }
-    return job, nil
+	job := &addJob{
+		X: args.Get("X").MustInt(-1),
+		Y: args.Get("Y").MustInt(-1),
+	}
+	return job, nil
 }
 
 func (j *addJob) Run() error {
-    j.out <- j.X + j.Y
-    return nil
+	sum := j.X + j.Y
+	log.Printf("sum(%d, %d) = %d\n", j.X, j.Y, sum)
+	return nil
 }
 
 func main() {
-    // Create a worker pool with default settings.
-    pool := worker.NewPool()
+	ctx := context.Background()
 
-    // Register tasks.
-    pool.Add(&addJob{})
+	q := worker.NewMemoryQueue()
+	q.Put(ctx, &addJob{2, 3})
 
-    // Starts the workers and processes the jobs
-    // from the queue until process exists.
-    pool.Run(ctx)
+	// Create a worker pool with default settings.
+	pool := worker.NewPool(
+		worker.SetQueue(q),
+	)
+
+	// Register tasks.
+	pool.Add(&addJob{})
+
+	// Starts the workers and processes the jobs
+	// from the queue until process exists.
+	pool.Run(ctx)
 }
-
 ```
 
 ## TODO
