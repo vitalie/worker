@@ -20,3 +20,9 @@ type middleware struct {
 func (m middleware) Exec(sw StatusWriter, fact string, args *Args) {
 	m.handler.Exec(sw, fact, args, m.next.Exec)
 }
+
+// CommonStack is used to configure default middleware
+// that's common for most applications: Recovery, Logger.
+func CommonStack() []Handler {
+	return []Handler{NewRecovery(), NewLogger()}
+}

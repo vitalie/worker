@@ -44,7 +44,7 @@ func NewPool(opts ...func(*Pool)) *Pool {
 		queue:    NewMemoryQueue(),
 		mux:      map[string]Factory{},
 		logger:   log.New(os.Stdout, "[worker] ", 0),
-		handlers: []Handler{NewRecovery(), NewLogger()},
+		handlers: CommonStack(),
 	}
 
 	// Apply options.
