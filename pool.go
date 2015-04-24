@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"golang.org/x/net/context"
 )
@@ -14,6 +15,16 @@ const (
 	DefaultWorkersCount = 10
 )
 
+var (
+	DefaultTTR  time.Duration = 60 * time.Second
+	DefaultWait time.Duration = 5 * time.Second
+)
+
+type response struct {
+	Msg *Message
+	Err error
+}
+
 // Pool represents a pool of workers connected to a queue.
 type Pool struct {
 	count int   // workers count
@@ -21,6 +32,7 @@ type Pool struct {
 
 	middleware middleware
 	handlers   []Handler
+	wait       time.Duration
 	mux        map[string]Factory
 	logger     *log.Logger
 }
@@ -44,6 +56,7 @@ func NewPool(opts ...func(*Pool)) *Pool {
 	pool := &Pool{
 		count:    DefaultWorkersCount,
 		queue:    NewMemoryQueue(),
+		wait:     DefaultWait,
 		mux:      map[string]Factory{},
 		logger:   log.New(os.Stdout, "[worker] ", 0),
 		handlers: CommonStack(),
@@ -107,12 +120,16 @@ func (p *Pool) last() middleware {
 func (p *Pool) Run(ctx context.Context) error {
 	var wg sync.WaitGroup
 
+	// Handle unix signals.
+	sig := p.trap()
+
+	ctx, cancel := context.WithCancel(ctx)
+
 	// Fan-out channel.
 	c := make(chan *Message)
-	defer close(c)
 
 	// Start workers.
-	wg.Add(p.count)
+	wg.Add(p.count + 1)
 	for i := 0; i < p.count; i++ {
 		go func() {
 			defer wg.Done()
@@ -120,27 +137,57 @@ func (p *Pool) Run(ctx context.Context) error {
 		}()
 	}
 
-	// Start producer.
+	// Start the master.
+	go func() {
+		defer wg.Done()
+		p.master(ctx, c)
+	}()
+
+	var err error
+	select {
+	case <-ctx.Done():
+		err = ctx.Err()
+	case <-sig:
+		cancel()
+	}
+
+	close(c)
+	wg.Wait()
+	return p.Shutdown(err)
+}
+
+// Shutdown waits wait time to allow workers to complete the job.
+func (p *Pool) Shutdown(err error) error {
+	p.logger.Println("Shutdown completed!")
+	return err
+}
+
+func (p *Pool) master(ctx context.Context, c chan<- *Message) {
+	var r *response
 	for {
-		msg, err := p.queue.Get(ctx)
-		if err != nil {
-			if wkerr, ok := err.(*Error); ok && wkerr.Timeout() {
+		select {
+		case <-ctx.Done():
+			return
+		case r = <-p.get():
+		}
+
+		if r.Err != nil {
+			if wkerr, ok := r.Err.(*Error); ok && wkerr.Temporary() {
 				continue
 			}
-			return err
+			return
 		}
 
 		select {
 		case <-ctx.Done():
-			wg.Wait()
-			return ctx.Err()
-		case c <- msg:
+			return
+		case c <- r.Msg:
 		}
 	}
 }
 
 // worker executes jobs from the in channel in a separate goroutine.
-func (p *Pool) worker(ctx context.Context, in chan *Message) {
+func (p *Pool) worker(ctx context.Context, in <-chan *Message) {
 	for msg := range in {
 		status := NewStatusWriter()
 		done := make(chan struct{}, 1)
@@ -157,11 +204,11 @@ func (p *Pool) worker(ctx context.Context, in chan *Message) {
 			return
 		case <-done:
 			if status.OK() {
-				if err := p.queue.Delete(ctx, msg); err != nil {
+				if err := p.queue.Delete(msg); err != nil {
 					p.logger.Println("delete:", msg, err)
 				}
 			} else {
-				if err := p.queue.Reject(ctx, msg); err != nil {
+				if err := p.queue.Reject(msg); err != nil {
 					p.logger.Println("reject:", msg, err)
 				}
 			}
@@ -194,6 +241,7 @@ func (p *Pool) execute(fact string, args *Args) error {
 	return nil
 }
 
+// trap traps OS signals to allow clean exit.
 func (p *Pool) trap() <-chan struct{} {
 	out := make(chan struct{}, 1)
 	signals := make(chan os.Signal, 1)
@@ -204,11 +252,34 @@ func (p *Pool) trap() <-chan struct{} {
 		for s := range signals {
 			switch s {
 			case syscall.SIGINT, syscall.SIGUSR1, syscall.SIGTERM:
-				p.logger.Println("Quit signal received!")
+				p.logger.Println("Quit signal received ...")
 				out <- struct{}{}
 				return
 			}
 		}
+	}()
+
+	return out
+}
+
+// get service peeks a message from queue and
+// returns it through a channel without blocking
+// the caller.
+func (p *Pool) get() <-chan *response {
+	// Buffered channel to avoid goroutine leaking.
+	out := make(chan *response, 1)
+
+	// Start a gorouting to avoid blocking.
+	go func() {
+		defer close(out)
+
+		msg, err := p.queue.Get()
+		if err != nil {
+			out <- &response{Err: err}
+			return
+		}
+
+		out <- &response{Msg: msg}
 	}()
 
 	return out

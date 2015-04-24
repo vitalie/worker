@@ -60,12 +60,12 @@ func TestPool(t *testing.T) {
 
 	go pool.Run(ctx)
 
-	if err := q.Put(ctx, &badJob{}); err != nil {
+	if err := q.Put(&badJob{}); err != nil {
 		t.Fatal(err)
 	}
 
 	for _, tt := range sumtests {
-		if err := q.Put(ctx, &addJob{X: tt.x, Y: tt.y}); err != nil {
+		if err := q.Put(&addJob{X: tt.x, Y: tt.y}); err != nil {
 			t.Fatal(err)
 		}
 

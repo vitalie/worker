@@ -3,8 +3,6 @@ package worker
 import (
 	"encoding/json"
 	"sync"
-
-	"golang.org/x/net/context"
 )
 
 // MemoryQueue represents an ordered queue,
@@ -21,7 +19,7 @@ func NewMemoryQueue() Queue {
 	}
 }
 
-func (q *MemoryQueue) Put(ctx context.Context, j Job) error {
+func (q *MemoryQueue) Put(j Job) error {
 	q.Lock()
 	defer q.Unlock()
 
@@ -50,7 +48,7 @@ func (q *MemoryQueue) Put(ctx context.Context, j Job) error {
 	return nil
 }
 
-func (q *MemoryQueue) Get(ctx context.Context) (*Message, error) {
+func (q *MemoryQueue) Get() (*Message, error) {
 	q.Lock()
 	defer q.Unlock()
 
@@ -63,7 +61,7 @@ func (q *MemoryQueue) Get(ctx context.Context) (*Message, error) {
 	return m, nil
 }
 
-func (q *MemoryQueue) Delete(ctx context.Context, msg *Message) error {
+func (q *MemoryQueue) Delete(msg *Message) error {
 	q.Lock()
 	defer q.Unlock()
 
@@ -76,11 +74,11 @@ func (q *MemoryQueue) Delete(ctx context.Context, msg *Message) error {
 	return nil
 }
 
-func (q *MemoryQueue) Reject(ctx context.Context, msg *Message) error {
-	return q.Delete(ctx, msg)
+func (q *MemoryQueue) Reject(msg *Message) error {
+	return q.Delete(msg)
 }
 
-func (q *MemoryQueue) Size(ctx context.Context) (uint64, error) {
+func (q *MemoryQueue) Size() (uint64, error) {
 	q.Lock()
 	defer q.Unlock()
 

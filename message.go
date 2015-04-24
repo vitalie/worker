@@ -23,11 +23,6 @@ func (d *data) String() string {
 	return string(json)
 }
 
-type response struct {
-	Msg *Message
-	Err error
-}
-
 type Args struct {
 	*data
 }

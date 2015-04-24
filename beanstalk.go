@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/kr/beanstalk"
-	"golang.org/x/net/context"
 )
 
 const (
@@ -21,7 +20,6 @@ const (
 )
 
 var (
-	defaultTTR     time.Duration = 60 * time.Second
 	defaultTimeout time.Duration = 1 * time.Second
 )
 
@@ -34,7 +32,7 @@ type BeanstalkQueue struct {
 	tset *beanstalk.TubeSet
 }
 
-func NewBeanstalkQueue(opts ...func(*BeanstalkQueue)) (*BeanstalkQueue, error) {
+func NewBeanstalkQueue(opts ...func(*BeanstalkQueue)) (Queue, error) {
 	q := &BeanstalkQueue{
 		host: defaultHost,
 		port: defaultPort,
@@ -59,7 +57,7 @@ func NewBeanstalkQueue(opts ...func(*BeanstalkQueue)) (*BeanstalkQueue, error) {
 	return q, nil
 }
 
-func (q *BeanstalkQueue) Put(ctx context.Context, j Job) error {
+func (q *BeanstalkQueue) Put(j Job) error {
 	typ, err := StructType(j)
 	if err != nil {
 		return err
@@ -75,7 +73,7 @@ func (q *BeanstalkQueue) Put(ctx context.Context, j Job) error {
 		return err
 	}
 
-	_, err = q.tube.Put(body, defaultPrio, 0, defaultTTR)
+	_, err = q.tube.Put(body, defaultPrio, 0, DefaultTTR)
 	if err != nil {
 		return err
 	}
@@ -83,49 +81,32 @@ func (q *BeanstalkQueue) Put(ctx context.Context, j Job) error {
 	return nil
 }
 
-func (q *BeanstalkQueue) Get(ctx context.Context) (*Message, error) {
-	c := make(chan *response, 1)
-
-	go func() {
-		defer close(c)
-
-		id, payload, err := q.tset.Reserve(defaultTimeout)
-		if err != nil {
-			if cerr, ok := err.(beanstalk.ConnError); ok && cerr.Err == beanstalk.ErrTimeout {
-				c <- &response{Err: &Error{Err: "timeout", IsTimeout: true}}
-				return
-			}
-			c <- &response{Err: err}
-			return
+func (q *BeanstalkQueue) Get() (*Message, error) {
+	id, payload, err := q.tset.Reserve(defaultTimeout)
+	if err != nil {
+		if cerr, ok := err.(beanstalk.ConnError); ok && cerr.Err == beanstalk.ErrTimeout {
+			return nil, &Error{Err: "timeout", IsTimeout: true}
 		}
-
-		msg, err := NewMessage(id, payload)
-		if err != nil {
-			c <- &response{Err: err}
-			return
-		}
-
-		c <- &response{Msg: msg}
-		return
-	}()
-
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case resp := <-c:
-		return resp.Msg, resp.Err
+		return nil, err
 	}
+
+	msg, err := NewMessage(id, payload)
+	if err != nil {
+		return nil, err
+	}
+
+	return msg, nil
 }
 
-func (q *BeanstalkQueue) Delete(ctx context.Context, m *Message) error {
+func (q *BeanstalkQueue) Delete(m *Message) error {
 	return q.conn.Delete(m.ID)
 }
 
-func (q *BeanstalkQueue) Reject(ctx context.Context, m *Message) error {
+func (q *BeanstalkQueue) Reject(m *Message) error {
 	return q.conn.Bury(m.ID, defaultPrio)
 }
 
-func (q *BeanstalkQueue) Size(ctx context.Context) (uint64, error) {
+func (q *BeanstalkQueue) Size() (uint64, error) {
 	var size uint64
 
 	dict, err := q.tube.Stats()

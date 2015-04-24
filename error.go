@@ -9,7 +9,8 @@ type Error struct {
 	IsTimeout bool
 }
 
-func (e *Error) Timeout() bool { return e.IsTimeout }
+func (e *Error) Timeout() bool   { return e.IsTimeout }
+func (e *Error) Temporary() bool { return e.IsTimeout }
 
 func (e *Error) Error() string {
 	if e == nil {
