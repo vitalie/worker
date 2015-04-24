@@ -44,7 +44,9 @@ func main() {
 	q := worker.NewMemoryQueue()
 	q.Put(ctx, &addJob{2, 3})
 
-	// Create a worker pool with default settings.
+	// Create a worker pool with default settings,
+  // common middlewares (Recovery, Logger) and
+  // using the `q` queue.
 	pool := worker.NewPool(
 		worker.SetQueue(q),
 	)
@@ -56,6 +58,15 @@ func main() {
 	// from the queue until process exists.
 	pool.Run(ctx)
 }
+```
+
+Example output:
+
+``` bash
+vitalie@black:~/tmp$ go run t.go
+[worker] addJob {"X":2,"Y":3} ... started
+2015/04/24 11:35:03 sum(2, 3) = 5
+[worker] addJob {"X":2,"Y":3} ... in 89.866µs ... OK
 ```
 
 ## TODO
