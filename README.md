@@ -48,7 +48,6 @@ func main() {
 	ctx := context.Background()
 
 	q := worker.NewMemoryQueue()
-
 	// Put job in the queue, visible/public fields
 	// of the struct are serialized in JSON format
 	// along with struct name.
