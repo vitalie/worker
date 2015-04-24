@@ -48,10 +48,8 @@ func (j *addJob) Run() error {
 }
 
 func main() {
-	ctx := context.Background()
-
 	q := worker.NewMemoryQueue()
-	q.Put(ctx, &addJob{2, 3})
+	q.Put(&addJob{2, 3})
 
 	// Create a worker pool with default settings,
 	// common middlewares (Recovery, Logger)
@@ -65,7 +63,7 @@ func main() {
 
 	// Starts the workers and processes the jobs
 	// from the queue until process exists.
-	pool.Run(ctx)
+	pool.Run(context.Background())
 }
 ```
 
@@ -74,8 +72,11 @@ Example output:
 ``` bash
 vitalie@black:~/tmp$ go run t.go
 [worker] addJob {"X":2,"Y":3} ... started
-2015/04/24 11:35:03 sum(2, 3) = 5
-[worker] addJob {"X":2,"Y":3} ... in 89.866µs ... OK
+2015/04/24 14:36:21 sum(2, 3) = 5
+[worker] addJob {"X":2,"Y":3} ... in 98.945µs ... OK
+^C[worker] Quit signal received ...
+[worker] Stopping workers ...
+[worker] Shutdown completed!
 ```
 
 ## TODO
