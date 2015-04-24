@@ -58,7 +58,7 @@ func TestPool(t *testing.T) {
 	pool.Add(&addJob{})
 	pool.Add(&badJob{})
 
-	go pool.Start(ctx)
+	go pool.Run(ctx)
 
 	if err := q.Put(ctx, &badJob{}); err != nil {
 		t.Fatal(err)
