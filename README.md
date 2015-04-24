@@ -21,6 +21,9 @@ import (
 )
 
 // addJob represents a simple background job.
+// When the job is queued, visible (public) fields
+// of the struct are serialized in JSON format along
+// with struct's name.
 type addJob struct {
 	X, Y int
 }
@@ -48,9 +51,6 @@ func main() {
 	ctx := context.Background()
 
 	q := worker.NewMemoryQueue()
-	// Put job in the queue, visible/public fields
-	// of the struct are serialized in JSON format
-	// along with struct name.
 	q.Put(ctx, &addJob{2, 3})
 
 	// Create a worker pool with default settings,
