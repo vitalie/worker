@@ -41,6 +41,7 @@ func SetWorkers(n int) func(*Pool) {
 func NewPool(opts ...func(*Pool)) *Pool {
 	pool := &Pool{
 		count:    DefaultWorkersCount,
+		queue:    NewMemoryQueue(),
 		mux:      map[string]Factory{},
 		logger:   log.New(os.Stdout, "[worker] ", 0),
 		handlers: []Handler{NewRecovery(), NewLogger()},

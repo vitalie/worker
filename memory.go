@@ -1,10 +1,9 @@
-package worker_test
+package worker
 
 import (
 	"encoding/json"
 	"sync"
 
-	"github.com/vitalie/worker"
 	"golang.org/x/net/context"
 )
 
@@ -13,25 +12,25 @@ import (
 type MemoryQueue struct {
 	sync.Mutex
 	count uint64
-	l     []*worker.Message
+	l     []*Message
 }
 
-func NewMemoryQueue() worker.Queue {
+func NewMemoryQueue() Queue {
 	return &MemoryQueue{
-		l: []*worker.Message{},
+		l: []*Message{},
 	}
 }
 
-func (q *MemoryQueue) Put(ctx context.Context, j worker.Job) error {
+func (q *MemoryQueue) Put(ctx context.Context, j Job) error {
 	q.Lock()
 	defer q.Unlock()
 
-	typ, err := worker.StructType(j)
+	typ, err := StructType(j)
 	if err != nil {
 		return err
 	}
 
-	job := &worker.Envelope{
+	job := &Envelope{
 		Type: typ,
 		Args: j,
 	}
@@ -42,7 +41,7 @@ func (q *MemoryQueue) Put(ctx context.Context, j worker.Job) error {
 	}
 
 	q.count++
-	msg, err := worker.NewMessage(q.count, body)
+	msg, err := NewMessage(q.count, body)
 	if err != nil {
 		return err
 	}
@@ -51,24 +50,24 @@ func (q *MemoryQueue) Put(ctx context.Context, j worker.Job) error {
 	return nil
 }
 
-func (q *MemoryQueue) Get(ctx context.Context) (*worker.Message, error) {
+func (q *MemoryQueue) Get(ctx context.Context) (*Message, error) {
 	q.Lock()
 	defer q.Unlock()
 
 	if len(q.l) == 0 {
-		return nil, &worker.Error{Err: "timeout", IsTimeout: true}
+		return nil, &Error{Err: "timeout", IsTimeout: true}
 	}
 
-	var m *worker.Message
+	var m *Message
 	m, q.l = q.l[len(q.l)-1], q.l[:len(q.l)-1]
 	return m, nil
 }
 
-func (q *MemoryQueue) Delete(ctx context.Context, msg *worker.Message) error {
+func (q *MemoryQueue) Delete(ctx context.Context, msg *Message) error {
 	q.Lock()
 	defer q.Unlock()
 
-	var lst []*worker.Message
+	var lst []*Message
 	for _, m := range q.l {
 		if m.ID != msg.ID {
 			lst = append(lst, m)
@@ -77,7 +76,7 @@ func (q *MemoryQueue) Delete(ctx context.Context, msg *worker.Message) error {
 	return nil
 }
 
-func (q *MemoryQueue) Reject(ctx context.Context, msg *worker.Message) error {
+func (q *MemoryQueue) Reject(ctx context.Context, msg *Message) error {
 	return q.Delete(ctx, msg)
 }
 

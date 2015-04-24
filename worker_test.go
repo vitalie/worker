@@ -42,7 +42,7 @@ func TestPool(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	q := NewMemoryQueue()
+	q := worker.NewMemoryQueue()
 	var sumtests = []struct {
 		x, y int
 		want int
