@@ -25,8 +25,8 @@ type addJob struct {
 	X, Y int
 }
 
-// Make implements Factory interface, it's job is to
-// initialize the struct with data received from the job queue.
+// Make implements Factory interface, it initialize
+// the struct with data received from the job queue.
 func (j *addJob) Make(args *worker.Args) (worker.Job, error) {
 	job := &addJob{
 		X: args.Get("X").MustInt(-1),
@@ -61,7 +61,7 @@ func main() {
 		worker.SetQueue(q),
 	)
 
-	// Register tasks.
+	// Register the job.
 	pool.Add(&addJob{})
 
 	// Starts the workers and processes the jobs
