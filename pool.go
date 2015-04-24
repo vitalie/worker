@@ -3,7 +3,9 @@ package worker
 import (
 	"log"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 
 	"golang.org/x/net/context"
 )
@@ -190,4 +192,24 @@ func (p *Pool) execute(fact string, args *Args) error {
 	}
 
 	return nil
+}
+
+func (p *Pool) trap() <-chan struct{} {
+	out := make(chan struct{}, 1)
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGUSR1, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		defer close(out)
+		for s := range signals {
+			switch s {
+			case syscall.SIGINT, syscall.SIGUSR1, syscall.SIGTERM:
+				p.logger.Println("Quit signal received!")
+				out <- struct{}{}
+				return
+			}
+		}
+	}()
+
+	return out
 }
