@@ -16,8 +16,7 @@ const (
 )
 
 var (
-	DefaultTTR  time.Duration = 60 * time.Second
-	DefaultWait time.Duration = 5 * time.Second
+	DefaultTTR time.Duration = 60 * time.Second
 )
 
 type response struct {
@@ -32,7 +31,6 @@ type Pool struct {
 
 	middleware middleware
 	handlers   []Handler
-	wait       time.Duration
 	mux        map[string]Factory
 	logger     *log.Logger
 }
@@ -56,7 +54,6 @@ func NewPool(opts ...func(*Pool)) *Pool {
 	pool := &Pool{
 		count:    DefaultWorkersCount,
 		queue:    NewMemoryQueue(),
-		wait:     DefaultWait,
 		mux:      map[string]Factory{},
 		logger:   log.New(os.Stdout, "[worker] ", 0),
 		handlers: CommonStack(),
@@ -151,13 +148,9 @@ func (p *Pool) Run(ctx context.Context) error {
 		cancel()
 	}
 
+	p.logger.Println("Stopping workers ...")
 	close(c)
 	wg.Wait()
-	return p.Shutdown(err)
-}
-
-// Shutdown waits wait time to allow workers to complete the job.
-func (p *Pool) Shutdown(err error) error {
 	p.logger.Println("Shutdown completed!")
 	return err
 }
