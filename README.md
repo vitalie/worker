@@ -1,6 +1,8 @@
 # Worker [![Travis CI](https://travis-ci.org/vitalie/worker.svg?branch=master)](https://travis-ci.org/vitalie/worker) [![GoDoc](https://godoc.org/github.com/vitalie/worker?status.svg)](http://godoc.org/github.com/vitalie/worker)
 
-An experimental background jobs processor using Beanstalk queue.
+An experimental background jobs processor. The following queues are supported:
+
+* [Beanstalk](http://godoc.org/github.com/vitalie/worker#BeanstalkQueue)
 
 ## Installation
 
@@ -82,6 +84,11 @@ vitalie@black:~/tmp$ go run t.go
 ## TODO
 
 - Amazon SQS Adapter
+
+## Credits
+
+- [@codegangsta](https://github.com/codegangsta)
+- [@jrallison](https://github.com/jrallison)
 
 ## Contributing
 
