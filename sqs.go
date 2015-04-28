@@ -13,12 +13,14 @@ const (
 )
 
 type SQSQueue struct {
+	name   string
 	queue  *sqs.Queue
 	region aws.Region
 }
 
 func NewSQSQueue(name string, opts ...func(*SQSQueue)) (Queue, error) {
 	q := &SQSQueue{
+		name:   name,
 		region: aws.USEast,
 	}
 
