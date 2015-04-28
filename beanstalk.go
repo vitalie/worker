@@ -98,12 +98,20 @@ func (q *BeanstalkQueue) Get() (Message, error) {
 	return msg, nil
 }
 
-func (q *BeanstalkQueue) Ack(m Message) error {
+func (q *BeanstalkQueue) Delete(m Message) error {
 	id, err := strconv.ParseUint(m.ID(), 10, 64)
 	if err != nil {
 		return NewErrorFmt("bad message ID: %v", m.ID())
 	}
 	return q.conn.Delete(id)
+}
+
+func (q *BeanstalkQueue) Reject(m Message) error {
+	id, err := strconv.ParseUint(m.ID(), 10, 64)
+	if err != nil {
+		return NewErrorFmt("bad message ID: %v", m.ID())
+	}
+	return q.conn.Bury(id, defaultPrio)
 }
 
 func (q *BeanstalkQueue) Size() (uint64, error) {

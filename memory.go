@@ -63,7 +63,7 @@ func (q *MemoryQueue) Get() (Message, error) {
 	return m, nil
 }
 
-func (q *MemoryQueue) Ack(msg Message) error {
+func (q *MemoryQueue) Delete(msg Message) error {
 	q.Lock()
 	defer q.Unlock()
 
@@ -74,6 +74,10 @@ func (q *MemoryQueue) Ack(msg Message) error {
 		}
 	}
 	return nil
+}
+
+func (q *MemoryQueue) Reject(msg Message) error {
+	return q.Delete(msg)
 }
 
 func (q *MemoryQueue) Size() (uint64, error) {
