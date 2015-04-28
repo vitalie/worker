@@ -6,7 +6,8 @@ import (
 	"github.com/bitly/go-simplejson"
 )
 
-type Envelope struct {
+// Payload represents a queue message payload.
+type Payload struct {
 	Type string      `json:"type"`
 	Args interface{} `json:"args"`
 }

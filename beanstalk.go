@@ -63,7 +63,7 @@ func (q *BeanstalkQueue) Put(j Job) error {
 		return err
 	}
 
-	job := &Envelope{
+	job := &Payload{
 		Type: typ,
 		Args: j,
 	}
