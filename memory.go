@@ -2,6 +2,7 @@ package worker
 
 import (
 	"encoding/json"
+	"strconv"
 	"sync"
 )
 
@@ -39,7 +40,8 @@ func (q *MemoryQueue) Put(j Job) error {
 	}
 
 	q.count++
-	msg, err := newEnvelope(q.count, payload)
+	id := strconv.FormatUint(q.count, 10)
+	msg, err := newEnvelope(id, payload)
 	if err != nil {
 		return err
 	}

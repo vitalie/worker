@@ -90,7 +90,7 @@ func (q *BeanstalkQueue) Get() (Message, error) {
 		return nil, err
 	}
 
-	msg, err := newEnvelope(id, payload)
+	msg, err := newEnvelope(strconv.FormatUint(id, 10), payload)
 	if err != nil {
 		return nil, err
 	}
@@ -99,11 +99,11 @@ func (q *BeanstalkQueue) Get() (Message, error) {
 }
 
 func (q *BeanstalkQueue) Ack(m Message) error {
-	env, ok := m.(*envelope)
-	if !ok {
-		return NewErrorFmt("bad message: %v", m)
+	id, err := strconv.ParseUint(m.ID(), 10, 64)
+	if err != nil {
+		return NewErrorFmt("bad message ID: %v", m.ID())
 	}
-	return q.conn.Delete(env.MsgID)
+	return q.conn.Delete(id)
 }
 
 func (q *BeanstalkQueue) Size() (uint64, error) {

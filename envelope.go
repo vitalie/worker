@@ -1,15 +1,11 @@
 package worker
 
-import (
-	"strconv"
-)
-
 type envelope struct {
-	MsgID uint64
+	MsgID string
 	*data
 }
 
-func newEnvelope(id uint64, body []byte) (*envelope, error) {
+func newEnvelope(id string, body []byte) (*envelope, error) {
 	json, err := toJson(body)
 	if err != nil {
 		return nil, err
@@ -18,7 +14,7 @@ func newEnvelope(id uint64, body []byte) (*envelope, error) {
 }
 
 func (m *envelope) ID() string {
-	return strconv.FormatUint(m.MsgID, 10)
+	return m.MsgID
 }
 
 func (m *envelope) Type() string {
