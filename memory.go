@@ -10,12 +10,12 @@ import (
 type MemoryQueue struct {
 	sync.Mutex
 	count uint64
-	l     []*Message
+	l     []Message
 }
 
 func NewMemoryQueue() Queue {
 	return &MemoryQueue{
-		l: []*Message{},
+		l: []Message{},
 	}
 }
 
@@ -33,13 +33,13 @@ func (q *MemoryQueue) Put(j Job) error {
 		Args: j,
 	}
 
-	body, err := json.Marshal(job)
+	payload, err := json.Marshal(job)
 	if err != nil {
 		return err
 	}
 
 	q.count++
-	msg, err := NewMessage(q.count, body)
+	msg, err := newEnvelope(q.count, payload)
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func (q *MemoryQueue) Put(j Job) error {
 	return nil
 }
 
-func (q *MemoryQueue) Get() (*Message, error) {
+func (q *MemoryQueue) Get() (Message, error) {
 	q.Lock()
 	defer q.Unlock()
 
@@ -56,18 +56,18 @@ func (q *MemoryQueue) Get() (*Message, error) {
 		return nil, &Error{Err: "timeout", IsTimeout: true}
 	}
 
-	var m *Message
+	var m Message
 	m, q.l = q.l[len(q.l)-1], q.l[:len(q.l)-1]
 	return m, nil
 }
 
-func (q *MemoryQueue) Ack(msg *Message) error {
+func (q *MemoryQueue) Ack(msg Message) error {
 	q.Lock()
 	defer q.Unlock()
 
-	var lst []*Message
+	var lst []Message
 	for _, m := range q.l {
-		if m.ID != msg.ID {
+		if m.ID() != msg.ID() {
 			lst = append(lst, m)
 		}
 	}

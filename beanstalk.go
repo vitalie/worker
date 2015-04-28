@@ -81,7 +81,7 @@ func (q *BeanstalkQueue) Put(j Job) error {
 	return nil
 }
 
-func (q *BeanstalkQueue) Get() (*Message, error) {
+func (q *BeanstalkQueue) Get() (Message, error) {
 	id, payload, err := q.tset.Reserve(defaultTimeout)
 	if err != nil {
 		if cerr, ok := err.(beanstalk.ConnError); ok && cerr.Err == beanstalk.ErrTimeout {
@@ -90,7 +90,7 @@ func (q *BeanstalkQueue) Get() (*Message, error) {
 		return nil, err
 	}
 
-	msg, err := NewMessage(id, payload)
+	msg, err := newEnvelope(id, payload)
 	if err != nil {
 		return nil, err
 	}
@@ -98,8 +98,12 @@ func (q *BeanstalkQueue) Get() (*Message, error) {
 	return msg, nil
 }
 
-func (q *BeanstalkQueue) Ack(m *Message) error {
-	return q.conn.Delete(m.ID)
+func (q *BeanstalkQueue) Ack(m Message) error {
+	env, ok := m.(*envelope)
+	if !ok {
+		return NewErrorFmt("bad message: %v", m)
+	}
+	return q.conn.Delete(env.MsgID)
 }
 
 func (q *BeanstalkQueue) Size() (uint64, error) {
