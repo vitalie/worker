@@ -1,7 +1,8 @@
 package worker
 
 type envelope struct {
-	MsgID string
+	msgID string
+	extra interface{}
 	*data
 }
 
@@ -10,11 +11,11 @@ func newEnvelope(id string, body []byte) (*envelope, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &envelope{MsgID: id, data: &data{json}}, nil
+	return &envelope{msgID: id, data: &data{json}}, nil
 }
 
 func (m *envelope) ID() string {
-	return m.MsgID
+	return m.msgID
 }
 
 func (m *envelope) Type() string {
