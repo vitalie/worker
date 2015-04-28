@@ -54,7 +54,7 @@ func TestBeanstalkQueue(t *testing.T) {
 		t.Error(msg.Args().Get("X"))
 	}
 
-	err = q.Delete(msg)
+	err = q.Ack(msg)
 	if err != nil {
 		t.Error(err)
 	}

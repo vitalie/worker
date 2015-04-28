@@ -98,12 +98,8 @@ func (q *BeanstalkQueue) Get() (*Message, error) {
 	return msg, nil
 }
 
-func (q *BeanstalkQueue) Delete(m *Message) error {
+func (q *BeanstalkQueue) Ack(m *Message) error {
 	return q.conn.Delete(m.ID)
-}
-
-func (q *BeanstalkQueue) Reject(m *Message) error {
-	return q.conn.Bury(m.ID, defaultPrio)
 }
 
 func (q *BeanstalkQueue) Size() (uint64, error) {

@@ -16,7 +16,6 @@ type Job interface {
 type Queue interface {
 	Put(Job) error
 	Get() (*Message, error)
-	Delete(*Message) error
-	Reject(*Message) error
+	Ack(*Message) error
 	Size() (uint64, error)
 }

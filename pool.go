@@ -197,12 +197,8 @@ func (p *Pool) worker(ctx context.Context, in <-chan *Message) {
 			return
 		case <-done:
 			if status.OK() {
-				if err := p.queue.Delete(msg); err != nil {
+				if err := p.queue.Ack(msg); err != nil {
 					p.logger.Println("delete:", msg, err)
-				}
-			} else {
-				if err := p.queue.Reject(msg); err != nil {
-					p.logger.Println("reject:", msg, err)
 				}
 			}
 		}
