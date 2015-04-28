@@ -1,25 +1,19 @@
 package worker
 
 type envelope struct {
-	msgID string
-	extra interface{}
 	*data
 }
 
-func newEnvelope(id string, body []byte) (*envelope, error) {
+func newEnvelope(body []byte) (*envelope, error) {
 	json, err := toJson(body)
 	if err != nil {
 		return nil, err
 	}
-	return &envelope{msgID: id, data: &data{json}}, nil
-}
-
-func (m *envelope) ID() string {
-	return m.msgID
+	return &envelope{data: &data{json}}, nil
 }
 
 func (m *envelope) Type() string {
-	return m.Get("type").MustString("<unknown>")
+	return m.Get("type").MustString("")
 }
 
 func (m *envelope) Args() *Args {
@@ -31,10 +25,21 @@ func (m *envelope) Args() *Args {
 	}
 }
 
-func (m *envelope) String() string {
-	if m == nil {
-		return "<nil>"
+type simpleEnvelope struct {
+	ID uint64
+	*envelope
+}
+
+func newSimpleEnvelope(id uint64, payload []byte) (*simpleEnvelope, error) {
+	base, err := newEnvelope(payload)
+	if err != nil {
+		return nil, err
 	}
 
-	return "&{" + m.ID() + ", " + m.data.String() + "}"
+	env := &simpleEnvelope{
+		ID:       id,
+		envelope: base,
+	}
+
+	return env, nil
 }

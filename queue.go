@@ -5,7 +5,6 @@ import (
 )
 
 type Message interface {
-	ID() string
 	Type() string
 	Args() *Args
 }

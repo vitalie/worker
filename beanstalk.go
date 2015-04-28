@@ -27,6 +27,7 @@ type BeanstalkQueue struct {
 	host string
 	port string
 	name string
+	prio uint32
 	conn *beanstalk.Conn
 	tube *beanstalk.Tube
 	tset *beanstalk.TubeSet
@@ -37,6 +38,7 @@ func NewBeanstalkQueue(opts ...func(*BeanstalkQueue)) (Queue, error) {
 		host: defaultHost,
 		port: defaultPort,
 		name: defaultTube,
+		prio: defaultPrio,
 	}
 
 	addr := net.JoinHostPort(q.host, q.port)
@@ -73,7 +75,7 @@ func (q *BeanstalkQueue) Put(j Job) error {
 		return err
 	}
 
-	_, err = q.tube.Put(body, defaultPrio, 0, DefaultTTR)
+	_, err = q.tube.Put(body, q.prio, 0, DefaultTTR)
 	if err != nil {
 		return err
 	}
@@ -90,7 +92,7 @@ func (q *BeanstalkQueue) Get() (Message, error) {
 		return nil, err
 	}
 
-	msg, err := newEnvelope(strconv.FormatUint(id, 10), payload)
+	msg, err := newSimpleEnvelope(id, payload)
 	if err != nil {
 		return nil, err
 	}
@@ -99,19 +101,19 @@ func (q *BeanstalkQueue) Get() (Message, error) {
 }
 
 func (q *BeanstalkQueue) Delete(m Message) error {
-	id, err := strconv.ParseUint(m.ID(), 10, 64)
-	if err != nil {
-		return NewErrorFmt("bad message ID: %v", m.ID())
+	if env, ok := m.(*simpleEnvelope); ok {
+		return q.conn.Delete(env.ID)
 	}
-	return q.conn.Delete(id)
+
+	return NewErrorFmt("bad envelope: %v", m)
 }
 
 func (q *BeanstalkQueue) Reject(m Message) error {
-	id, err := strconv.ParseUint(m.ID(), 10, 64)
-	if err != nil {
-		return NewErrorFmt("bad message ID: %v", m.ID())
+	if env, ok := m.(*simpleEnvelope); ok {
+		return q.conn.Bury(env.ID, q.prio)
 	}
-	return q.conn.Bury(id, defaultPrio)
+
+	return NewErrorFmt("bad envelope: %v", m)
 }
 
 func (q *BeanstalkQueue) Size() (uint64, error) {

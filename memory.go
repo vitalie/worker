@@ -2,7 +2,6 @@ package worker
 
 import (
 	"encoding/json"
-	"strconv"
 	"sync"
 )
 
@@ -11,12 +10,12 @@ import (
 type MemoryQueue struct {
 	sync.Mutex
 	count uint64
-	l     []Message
+	l     []*simpleEnvelope
 }
 
 func NewMemoryQueue() Queue {
 	return &MemoryQueue{
-		l: []Message{},
+		l: []*simpleEnvelope{},
 	}
 }
 
@@ -40,8 +39,7 @@ func (q *MemoryQueue) Put(j Job) error {
 	}
 
 	q.count++
-	id := strconv.FormatUint(q.count, 10)
-	msg, err := newEnvelope(id, payload)
+	msg, err := newSimpleEnvelope(q.count, payload)
 	if err != nil {
 		return err
 	}
@@ -67,12 +65,18 @@ func (q *MemoryQueue) Delete(msg Message) error {
 	q.Lock()
 	defer q.Unlock()
 
+	env, ok := msg.(*simpleEnvelope)
+	if !ok {
+		return NewErrorFmt("bad envelope: %v", msg)
+	}
+
 	var lst []Message
-	for _, m := range q.l {
-		if m.ID() != msg.ID() {
-			lst = append(lst, m)
+	for _, i := range q.l {
+		if i.ID != env.ID {
+			lst = append(lst, i)
 		}
 	}
+
 	return nil
 }
 
