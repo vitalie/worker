@@ -5,17 +5,36 @@ import (
 	"sync"
 )
 
+type memoryMessage struct {
+	ID uint64
+	*Envelope
+}
+
+func newMemoryMessage(id uint64, payload []byte) (*memoryMessage, error) {
+	base, err := NewEnvelope(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	env := &memoryMessage{
+		ID:       id,
+		Envelope: base,
+	}
+
+	return env, nil
+}
+
 // MemoryQueue represents an ordered queue,
 // this queue is used in unit tests only.
 type MemoryQueue struct {
 	sync.Mutex
-	count uint64
-	l     []*Message
+	size uint64
+	l    []*memoryMessage
 }
 
 func NewMemoryQueue() Queue {
 	return &MemoryQueue{
-		l: []*Message{},
+		l: []*memoryMessage{},
 	}
 }
 
@@ -33,13 +52,13 @@ func (q *MemoryQueue) Put(j Job) error {
 		Args: j,
 	}
 
-	body, err := json.Marshal(job)
+	payload, err := json.Marshal(job)
 	if err != nil {
 		return err
 	}
 
-	q.count++
-	msg, err := NewMessage(q.count, body)
+	q.size++
+	msg, err := newMemoryMessage(q.size, payload)
 	if err != nil {
 		return err
 	}
@@ -48,7 +67,7 @@ func (q *MemoryQueue) Put(j Job) error {
 	return nil
 }
 
-func (q *MemoryQueue) Get() (*Message, error) {
+func (q *MemoryQueue) Get() (Message, error) {
 	q.Lock()
 	defer q.Unlock()
 
@@ -56,22 +75,32 @@ func (q *MemoryQueue) Get() (*Message, error) {
 		return nil, &Error{Err: "timeout", IsTimeout: true}
 	}
 
-	var m *Message
+	var m Message
 	m, q.l = q.l[len(q.l)-1], q.l[:len(q.l)-1]
 	return m, nil
 }
 
-func (q *MemoryQueue) Ack(msg *Message) error {
+func (q *MemoryQueue) Delete(msg Message) error {
 	q.Lock()
 	defer q.Unlock()
 
-	var lst []*Message
-	for _, m := range q.l {
-		if m.ID != msg.ID {
-			lst = append(lst, m)
+	env, ok := msg.(*memoryMessage)
+	if !ok {
+		return NewErrorFmt("bad envelope: %v", msg)
+	}
+
+	var lst []Message
+	for _, i := range q.l {
+		if i.ID != env.ID {
+			lst = append(lst, i)
 		}
 	}
+
 	return nil
+}
+
+func (q *MemoryQueue) Reject(msg Message) error {
+	return q.Delete(msg)
 }
 
 func (q *MemoryQueue) Size() (uint64, error) {

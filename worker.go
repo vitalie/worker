@@ -12,10 +12,3 @@ type Job interface {
 	Runner
 	Factory
 }
-
-type Queue interface {
-	Put(Job) error
-	Get() (*Message, error)
-	Ack(*Message) error
-	Size() (uint64, error)
-}

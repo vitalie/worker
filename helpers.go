@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 
@@ -26,7 +25,7 @@ func StructType(v interface{}) (string, error) {
 	}
 
 	if typ.Kind() != reflect.Struct {
-		return "", fmt.Errorf("worker: not a struct")
+		return "", NewError("not a struct")
 	}
 
 	items := strings.Split(typ.String(), ".")
@@ -35,5 +34,5 @@ func StructType(v interface{}) (string, error) {
 		return items[len(items)-1], nil
 	}
 
-	return "", fmt.Errorf("worker: bad struct name")
+	return "", NewError("bad struct name")
 }

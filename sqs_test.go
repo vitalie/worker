@@ -1,24 +1,24 @@
 package worker_test
 
 import (
+	"os"
 	"testing"
 
+	_ "github.com/joho/godotenv/autoload"
 	"github.com/vitalie/worker"
 )
 
-func TestBeanstalkQueue(t *testing.T) {
+func TestSQSQueue(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
 
-	j := &addJob{X: 1, Y: 2}
-
-	q, err := worker.NewBeanstalkQueue()
-	if err != nil {
-		t.Error(err)
+	if os.Getenv("AWS_ACCESS_KEY_ID") == "" || os.Getenv("AWS_SECRET_ACCESS_KEY") == "" {
+		t.Skip("skipping test, AWS credentials not found.")
 	}
 
-	s1, err := q.Size()
+	j := &addJob{X: 1, Y: 2}
+	q, err := worker.NewSQSQueue("worker_test")
 	if err != nil {
 		t.Error(err)
 	}
@@ -28,13 +28,13 @@ func TestBeanstalkQueue(t *testing.T) {
 		t.Error(err)
 	}
 
-	s2, err := q.Size()
+	size, err := q.Size()
 	if err != nil {
 		t.Error(err)
 	}
 
-	if s2 < s1+1 {
-		t.Errorf("expecting size to be %v, got %v", s1+1, s2)
+	if size != 1 {
+		t.Errorf("expecting size to be %v, got %v", 1, size)
 	}
 
 	msg, err := q.Get()
@@ -57,5 +57,14 @@ func TestBeanstalkQueue(t *testing.T) {
 	err = q.Delete(msg)
 	if err != nil {
 		t.Error(err)
+	}
+
+	size, err = q.Size()
+	if err != nil {
+		t.Error(err)
+	}
+
+	if size != 0 {
+		t.Errorf("expecting size to be %v, got %v", 0, size)
 	}
 }

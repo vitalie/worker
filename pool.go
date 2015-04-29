@@ -20,7 +20,7 @@ var (
 )
 
 type response struct {
-	Msg *Message
+	Msg Message
 	Err error
 }
 
@@ -123,7 +123,7 @@ func (p *Pool) Run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 
 	// Fan-out channel.
-	c := make(chan *Message)
+	c := make(chan Message)
 
 	// Start workers.
 	wg.Add(p.count + 1)
@@ -155,7 +155,7 @@ func (p *Pool) Run(ctx context.Context) error {
 	return err
 }
 
-func (p *Pool) master(ctx context.Context, c chan<- *Message) {
+func (p *Pool) master(ctx context.Context, c chan<- Message) {
 	var r *response
 	for {
 		select {
@@ -180,7 +180,7 @@ func (p *Pool) master(ctx context.Context, c chan<- *Message) {
 }
 
 // worker executes jobs from the in channel in a separate goroutine.
-func (p *Pool) worker(ctx context.Context, in <-chan *Message) {
+func (p *Pool) worker(ctx context.Context, in <-chan Message) {
 	for msg := range in {
 		status := NewStatusWriter()
 		done := make(chan struct{}, 1)
@@ -197,8 +197,12 @@ func (p *Pool) worker(ctx context.Context, in <-chan *Message) {
 			return
 		case <-done:
 			if status.OK() {
-				if err := p.queue.Ack(msg); err != nil {
-					p.logger.Println("Ack failure:", msg, err)
+				if err := p.queue.Delete(msg); err != nil {
+					p.logger.Println("Delete failure:", msg, err)
+				}
+			} else {
+				if err := p.queue.Reject(msg); err != nil {
+					p.logger.Println("Reject failure:", msg, err)
 				}
 			}
 		}
