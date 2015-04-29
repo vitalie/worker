@@ -3,6 +3,7 @@
 An experimental background jobs processor. The following queues are supported:
 
 * [Beanstalk](http://godoc.org/github.com/vitalie/worker#BeanstalkQueue)
+* [Amazon SQS](http://aws.amazon.com/sqs/)
 
 ## Installation
 
@@ -80,10 +81,6 @@ vitalie@black:~/tmp$ go run t.go
 [worker] Stopping workers ...
 [worker] Shutdown completed!
 ```
-
-## TODO
-
-- Amazon SQS Adapter
 
 ## Credits
 
