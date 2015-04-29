@@ -1,45 +1,26 @@
 package worker
 
-type envelope struct {
+type Envelope struct {
 	*data
 }
 
-func newEnvelope(body []byte) (*envelope, error) {
+func NewEnvelope(body []byte) (*Envelope, error) {
 	json, err := toJson(body)
 	if err != nil {
 		return nil, err
 	}
-	return &envelope{data: &data{json}}, nil
+	return &Envelope{data: &data{json}}, nil
 }
 
-func (m *envelope) Type() string {
+func (m *Envelope) Type() string {
 	return m.Get("type").MustString("")
 }
 
-func (m *envelope) Args() *Args {
+func (m *Envelope) Args() *Args {
 	if args, ok := m.CheckGet("args"); ok {
 		return &Args{&data{args}}
 	} else {
 		json, _ := toJson([]byte("[]"))
 		return &Args{&data{json}}
 	}
-}
-
-type commonEnvelope struct {
-	ID uint64
-	*envelope
-}
-
-func newCommonEnvelope(id uint64, payload []byte) (*commonEnvelope, error) {
-	base, err := newEnvelope(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	env := &commonEnvelope{
-		ID:       id,
-		envelope: base,
-	}
-
-	return env, nil
 }

@@ -22,6 +22,25 @@ var (
 	beanstalkTimeout time.Duration = 1 * time.Second
 )
 
+type beanstalkMessage struct {
+	ID uint64
+	*Envelope
+}
+
+func newBeanstalkMessage(id uint64, payload []byte) (*beanstalkMessage, error) {
+	base, err := NewEnvelope(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	env := &beanstalkMessage{
+		ID:       id,
+		Envelope: base,
+	}
+
+	return env, nil
+}
+
 type BeanstalkQueue struct {
 	host string
 	port string
@@ -91,7 +110,7 @@ func (q *BeanstalkQueue) Get() (Message, error) {
 		return nil, err
 	}
 
-	msg, err := newCommonEnvelope(id, payload)
+	msg, err := newBeanstalkMessage(id, payload)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +119,7 @@ func (q *BeanstalkQueue) Get() (Message, error) {
 }
 
 func (q *BeanstalkQueue) Delete(m Message) error {
-	if env, ok := m.(*commonEnvelope); ok {
+	if env, ok := m.(*beanstalkMessage); ok {
 		return q.conn.Delete(env.ID)
 	}
 
@@ -108,7 +127,7 @@ func (q *BeanstalkQueue) Delete(m Message) error {
 }
 
 func (q *BeanstalkQueue) Reject(m Message) error {
-	if env, ok := m.(*commonEnvelope); ok {
+	if env, ok := m.(*beanstalkMessage); ok {
 		return q.conn.Bury(env.ID, q.prio)
 	}
 

@@ -5,17 +5,36 @@ import (
 	"sync"
 )
 
+type memoryMessage struct {
+	ID uint64
+	*Envelope
+}
+
+func newMemoryMessage(id uint64, payload []byte) (*memoryMessage, error) {
+	base, err := NewEnvelope(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	env := &memoryMessage{
+		ID:       id,
+		Envelope: base,
+	}
+
+	return env, nil
+}
+
 // MemoryQueue represents an ordered queue,
 // this queue is used in unit tests only.
 type MemoryQueue struct {
 	sync.Mutex
-	count uint64
-	l     []*commonEnvelope
+	size uint64
+	l    []*memoryMessage
 }
 
 func NewMemoryQueue() Queue {
 	return &MemoryQueue{
-		l: []*commonEnvelope{},
+		l: []*memoryMessage{},
 	}
 }
 
@@ -38,8 +57,8 @@ func (q *MemoryQueue) Put(j Job) error {
 		return err
 	}
 
-	q.count++
-	msg, err := newCommonEnvelope(q.count, payload)
+	q.size++
+	msg, err := newMemoryMessage(q.size, payload)
 	if err != nil {
 		return err
 	}
@@ -65,7 +84,7 @@ func (q *MemoryQueue) Delete(msg Message) error {
 	q.Lock()
 	defer q.Unlock()
 
-	env, ok := msg.(*commonEnvelope)
+	env, ok := msg.(*memoryMessage)
 	if !ok {
 		return NewErrorFmt("bad envelope: %v", msg)
 	}

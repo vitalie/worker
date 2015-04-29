@@ -12,20 +12,20 @@ const (
 	sqsSizeKey = "ApproximateNumberOfMessages"
 )
 
-type sqsEnvelope struct {
-	msg *sqs.Message
-	*envelope
+type sqsMessage struct {
+	Msg *sqs.Message
+	*Envelope
 }
 
-func newSQSEnvelope(msg *sqs.Message, payload []byte) (*sqsEnvelope, error) {
-	env, err := newEnvelope(payload)
+func newSQSMessage(msg *sqs.Message, payload []byte) (*sqsMessage, error) {
+	env, err := NewEnvelope(payload)
 	if err != nil {
 		return nil, err
 	}
 
-	benv := &sqsEnvelope{
-		msg:      msg,
-		envelope: env,
+	benv := &sqsMessage{
+		Msg:      msg,
+		Envelope: env,
 	}
 
 	return benv, nil
@@ -91,7 +91,7 @@ func (q *SQSQueue) Get() (Message, error) {
 	}
 
 	msg := resp.Messages[0]
-	env, err := newSQSEnvelope(&msg, []byte(msg.Body))
+	env, err := newSQSMessage(&msg, []byte(msg.Body))
 	if err != nil {
 		return nil, err
 	}
@@ -100,12 +100,12 @@ func (q *SQSQueue) Get() (Message, error) {
 }
 
 func (q *SQSQueue) Delete(msg Message) error {
-	env, ok := msg.(*sqsEnvelope)
+	env, ok := msg.(*sqsMessage)
 	if !ok {
 		return NewErrorFmt("bad sqs envelope")
 	}
 
-	_, err := q.queue.DeleteMessage(env.msg)
+	_, err := q.queue.DeleteMessage(env.Msg)
 	return err
 }
 
