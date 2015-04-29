@@ -28,6 +28,10 @@ type data struct {
 }
 
 func (d *data) String() string {
+	if d == nil {
+		return "<nil>"
+	}
+
 	json, err := d.MarshalJSON()
 	if err != nil {
 		return "MarshalJSON: " + err.Error()
