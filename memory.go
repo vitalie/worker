@@ -25,7 +25,7 @@ func newMemoryMessage(id uint64, payload []byte) (*memoryMessage, error) {
 }
 
 // MemoryQueue represents an ordered queue,
-// this queue is used in unit tests only.
+// this queue is used mainly for unit tests.
 type MemoryQueue struct {
 	sync.Mutex
 	size uint64
