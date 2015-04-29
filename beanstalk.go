@@ -2,7 +2,6 @@ package worker
 
 import (
 	"encoding/json"
-	"fmt"
 	"net"
 	"strconv"
 	"time"
@@ -142,14 +141,13 @@ func (q *BeanstalkQueue) Size() (uint64, error) {
 		return 0, err
 	}
 
-	v, ok := dict[beanstalkReady]
-	if !ok {
-		return 0, fmt.Errorf("worker: bad size %v", v)
-	}
-
-	size, err = strconv.ParseUint(v, 10, 64)
-	if err != nil {
-		return 0, err
+	if v, ok := dict[beanstalkReady]; !ok {
+		return 0, NewErrorFmt("bad dict %v", v)
+	} else {
+		size, err = strconv.ParseUint(v, 10, 64)
+		if err != nil {
+			return 0, err
+		}
 	}
 
 	return size, nil
