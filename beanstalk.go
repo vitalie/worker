@@ -11,16 +11,15 @@ import (
 )
 
 const (
-	defaultHost = "localhost"
-	defaultPort = "11300"
-	defaultTube = "default"
-	defaultPrio = 100
-
-	sizeKey = "current-jobs-ready"
+	beanstalkHost  = "localhost"
+	beanstalkPort  = "11300"
+	beanstalkTube  = "default"
+	beanstalkPrio  = 100
+	beanstalkReady = "current-jobs-ready"
 )
 
 var (
-	defaultTimeout time.Duration = 1 * time.Second
+	beanstalkTimeout time.Duration = 1 * time.Second
 )
 
 type BeanstalkQueue struct {
@@ -35,10 +34,10 @@ type BeanstalkQueue struct {
 
 func NewBeanstalkQueue(opts ...func(*BeanstalkQueue)) (Queue, error) {
 	q := &BeanstalkQueue{
-		host: defaultHost,
-		port: defaultPort,
-		name: defaultTube,
-		prio: defaultPrio,
+		host: beanstalkHost,
+		port: beanstalkPort,
+		name: beanstalkTube,
+		prio: beanstalkPrio,
 	}
 
 	addr := net.JoinHostPort(q.host, q.port)
@@ -84,7 +83,7 @@ func (q *BeanstalkQueue) Put(j Job) error {
 }
 
 func (q *BeanstalkQueue) Get() (Message, error) {
-	id, payload, err := q.tset.Reserve(defaultTimeout)
+	id, payload, err := q.tset.Reserve(beanstalkTimeout)
 	if err != nil {
 		if cerr, ok := err.(beanstalk.ConnError); ok && cerr.Err == beanstalk.ErrTimeout {
 			return nil, &Error{Err: "timeout", IsTimeout: true}
@@ -124,7 +123,7 @@ func (q *BeanstalkQueue) Size() (uint64, error) {
 		return 0, err
 	}
 
-	v, ok := dict[sizeKey]
+	v, ok := dict[beanstalkReady]
 	if !ok {
 		return 0, fmt.Errorf("worker: bad size %v", v)
 	}
