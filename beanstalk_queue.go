@@ -18,7 +18,8 @@ const (
 )
 
 var (
-	beanstalkTimeout time.Duration = 1 * time.Second // Beanstalk reserve timeout.
+	beanstalkTimeout time.Duration = 1 * time.Second  // Beanstalk reserve timeout.
+	beanstalkTTR     time.Duration = 60 * time.Second // Beanstalk default TTR (time to run).
 )
 
 // beanstalkMessage represents data returned by Reserve.
@@ -44,10 +45,11 @@ func newBeanstalkMessage(id uint64, payload []byte) (*beanstalkMessage, error) {
 
 // BeanstalkQueue represents a Beanstalk queue.
 type BeanstalkQueue struct {
-	host string // Beanstalk host.
-	port string // Beanstalk port.
-	name string // Beanstalk tube name.
-	prio uint32 // Beanstalk priority.
+	host string        // Beanstalk host.
+	port string        // Beanstalk port.
+	name string        // Beanstalk tube name.
+	prio uint32        // Beanstalk priority.
+	ttr  time.Duration // Beanstalk time to run.
 
 	conn *beanstalk.Conn
 	tube *beanstalk.Tube
@@ -61,6 +63,7 @@ func NewBeanstalkQueue(opts ...func(*BeanstalkQueue)) (Queue, error) {
 		port: beanstalkPort,
 		name: beanstalkTube,
 		prio: beanstalkPrio,
+		ttr:  beanstalkTTR,
 	}
 
 	addr := net.JoinHostPort(q.host, q.port)
@@ -98,7 +101,7 @@ func (q *BeanstalkQueue) Put(j Job) error {
 		return err
 	}
 
-	_, err = q.tube.Put(body, q.prio, 0, DefaultTTR)
+	_, err = q.tube.Put(body, q.prio, 0, q.ttr)
 	if err != nil {
 		return err
 	}

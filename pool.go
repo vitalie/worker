@@ -6,17 +6,12 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
-	"time"
 
 	"golang.org/x/net/context"
 )
 
 const (
 	DefaultWorkersCount = 10
-)
-
-var (
-	DefaultTTR time.Duration = 60 * time.Second
 )
 
 type response struct {
