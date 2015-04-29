@@ -92,7 +92,7 @@ func (q *BeanstalkQueue) Get() (Message, error) {
 		return nil, err
 	}
 
-	msg, err := newSimpleEnvelope(id, payload)
+	msg, err := newCommonEnvelope(id, payload)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (q *BeanstalkQueue) Get() (Message, error) {
 }
 
 func (q *BeanstalkQueue) Delete(m Message) error {
-	if env, ok := m.(*simpleEnvelope); ok {
+	if env, ok := m.(*commonEnvelope); ok {
 		return q.conn.Delete(env.ID)
 	}
 
@@ -109,7 +109,7 @@ func (q *BeanstalkQueue) Delete(m Message) error {
 }
 
 func (q *BeanstalkQueue) Reject(m Message) error {
-	if env, ok := m.(*simpleEnvelope); ok {
+	if env, ok := m.(*commonEnvelope); ok {
 		return q.conn.Bury(env.ID, q.prio)
 	}
 

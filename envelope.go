@@ -25,18 +25,18 @@ func (m *envelope) Args() *Args {
 	}
 }
 
-type simpleEnvelope struct {
+type commonEnvelope struct {
 	ID uint64
 	*envelope
 }
 
-func newSimpleEnvelope(id uint64, payload []byte) (*simpleEnvelope, error) {
+func newCommonEnvelope(id uint64, payload []byte) (*commonEnvelope, error) {
 	base, err := newEnvelope(payload)
 	if err != nil {
 		return nil, err
 	}
 
-	env := &simpleEnvelope{
+	env := &commonEnvelope{
 		ID:       id,
 		envelope: base,
 	}

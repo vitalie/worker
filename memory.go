@@ -10,12 +10,12 @@ import (
 type MemoryQueue struct {
 	sync.Mutex
 	count uint64
-	l     []*simpleEnvelope
+	l     []*commonEnvelope
 }
 
 func NewMemoryQueue() Queue {
 	return &MemoryQueue{
-		l: []*simpleEnvelope{},
+		l: []*commonEnvelope{},
 	}
 }
 
@@ -39,7 +39,7 @@ func (q *MemoryQueue) Put(j Job) error {
 	}
 
 	q.count++
-	msg, err := newSimpleEnvelope(q.count, payload)
+	msg, err := newCommonEnvelope(q.count, payload)
 	if err != nil {
 		return err
 	}
@@ -65,7 +65,7 @@ func (q *MemoryQueue) Delete(msg Message) error {
 	q.Lock()
 	defer q.Unlock()
 
-	env, ok := msg.(*simpleEnvelope)
+	env, ok := msg.(*commonEnvelope)
 	if !ok {
 		return NewErrorFmt("bad envelope: %v", msg)
 	}
