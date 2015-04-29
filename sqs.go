@@ -12,11 +12,13 @@ const (
 	sqsSizeKey = "ApproximateNumberOfMessages"
 )
 
+// sqsMessage represents a SQS message.
 type sqsMessage struct {
-	Msg *sqs.Message
-	*Envelope
+	Msg       *sqs.Message // Original SQS message.
+	*Envelope              // Holds parsed payload in JSON format.
 }
 
+// newSQSMessage returns an instance of sqsMessage.
 func newSQSMessage(msg *sqs.Message, payload []byte) (*sqsMessage, error) {
 	env, err := NewEnvelope(payload)
 	if err != nil {
@@ -31,12 +33,15 @@ func newSQSMessage(msg *sqs.Message, payload []byte) (*sqsMessage, error) {
 	return benv, nil
 }
 
+// SQSQueue represents a SQS queue, the queue should be configured
+// to use redrive policy to move the failed jobs to a dead letter queue.
 type SQSQueue struct {
-	name   string
-	queue  *sqs.Queue
-	region aws.Region
+	name   string     // AWS SQS queue name.
+	queue  *sqs.Queue // AWS SQS Queue reference.
+	region aws.Region // AWS region.
 }
 
+// NewSQSQueue returns an instance of SQSQueue using custom options.
 func NewSQSQueue(name string, opts ...func(*SQSQueue)) (Queue, error) {
 	q := &SQSQueue{
 		name:   name,
@@ -60,6 +65,7 @@ func NewSQSQueue(name string, opts ...func(*SQSQueue)) (Queue, error) {
 	return q, nil
 }
 
+// Put puts the job in the queue.
 func (q *SQSQueue) Put(j Job) error {
 	typ, err := StructType(j)
 	if err != nil {
@@ -80,6 +86,7 @@ func (q *SQSQueue) Put(j Job) error {
 	return err
 }
 
+// Get peeks a message from the queue.
 func (q *SQSQueue) Get() (Message, error) {
 	resp, err := q.queue.ReceiveMessage(1)
 	if err != nil {
@@ -99,6 +106,7 @@ func (q *SQSQueue) Get() (Message, error) {
 	return env, nil
 }
 
+// Delete deletes a message from the queue.
 func (q *SQSQueue) Delete(msg Message) error {
 	env, ok := msg.(*sqsMessage)
 	if !ok {
@@ -109,10 +117,12 @@ func (q *SQSQueue) Delete(msg Message) error {
 	return err
 }
 
+// Reject is NOOP required to implement Queue interface.
 func (q *SQSQueue) Reject(msg Message) error {
 	return nil
 }
 
+// Size returns aproximate queue size.
 func (q *SQSQueue) Size() (uint64, error) {
 	resp, err := q.queue.GetQueueAttributes(sqsSizeKey)
 	if err != nil {
