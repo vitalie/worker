@@ -10,16 +10,17 @@ import (
 )
 
 const (
-	beanstalkHost  = "localhost"          // Beanstalk default host.
-	beanstalkPort  = "11300"              // Beanstalk default port.
-	beanstalkTube  = "default"            // Beanstalk default queue.
-	beanstalkPrio  = 100                  // Beanstalk default job priority.
-	beanstalkReady = "current-jobs-ready" // Beanstalk key for queue size.
+	BeanstalkHost = "localhost" // Beanstalk default host.
+	BeanstalkPort = "11300"     // Beanstalk default port.
+	BeanstalkTube = "default"   // Beanstalk default queue.
+	BeanstalkPrio = 100         // Beanstalk default job priority.
+
+	beanstalkReadyKey = "current-jobs-ready" // Beanstalk key for queue size.
 )
 
 var (
-	beanstalkTimeout time.Duration = 1 * time.Second  // Beanstalk reserve timeout.
-	beanstalkTTR     time.Duration = 60 * time.Second // Beanstalk default TTR (time to run).
+	BeanstalkTimeout time.Duration = 1 * time.Second  // Beanstalk reserve timeout.
+	BeanstalkTTR     time.Duration = 60 * time.Second // Beanstalk default TTR (time to run).
 )
 
 // beanstalkMessage represents data returned by Reserve.
@@ -45,11 +46,11 @@ func newBeanstalkMessage(id uint64, payload []byte) (*beanstalkMessage, error) {
 
 // BeanstalkQueue represents a Beanstalk queue.
 type BeanstalkQueue struct {
-	host string        // Beanstalk host.
-	port string        // Beanstalk port.
-	name string        // Beanstalk tube name.
-	prio uint32        // Beanstalk priority.
-	ttr  time.Duration // Beanstalk time to run.
+	Host string        // Beanstalk host.
+	Port string        // Beanstalk port.
+	Name string        // Beanstalk tube name.
+	Prio uint32        // Beanstalk priority.
+	TTR  time.Duration // Beanstalk time to run.
 
 	conn *beanstalk.Conn
 	tube *beanstalk.Tube
@@ -59,14 +60,14 @@ type BeanstalkQueue struct {
 // NewBeanstalkQueue returns a queue instance using custom options.
 func NewBeanstalkQueue(opts ...func(*BeanstalkQueue)) (Queue, error) {
 	q := &BeanstalkQueue{
-		host: beanstalkHost,
-		port: beanstalkPort,
-		name: beanstalkTube,
-		prio: beanstalkPrio,
-		ttr:  beanstalkTTR,
+		Host: BeanstalkHost,
+		Port: BeanstalkPort,
+		Name: BeanstalkTube,
+		Prio: BeanstalkPrio,
+		TTR:  BeanstalkTTR,
 	}
 
-	addr := net.JoinHostPort(q.host, q.port)
+	addr := net.JoinHostPort(q.Host, q.Port)
 
 	conn, err := beanstalk.Dial("tcp", addr)
 	if err != nil {
@@ -76,10 +77,10 @@ func NewBeanstalkQueue(opts ...func(*BeanstalkQueue)) (Queue, error) {
 
 	tube := &beanstalk.Tube{
 		Conn: q.conn,
-		Name: q.name,
+		Name: q.Name,
 	}
 	q.tube = tube
-	q.tset = beanstalk.NewTubeSet(conn, q.name)
+	q.tset = beanstalk.NewTubeSet(conn, q.Name)
 
 	return q, nil
 }
@@ -101,7 +102,7 @@ func (q *BeanstalkQueue) Put(j Job) error {
 		return err
 	}
 
-	_, err = q.tube.Put(body, q.prio, 0, q.ttr)
+	_, err = q.tube.Put(body, q.Prio, 0, q.TTR)
 	if err != nil {
 		return err
 	}
@@ -111,7 +112,7 @@ func (q *BeanstalkQueue) Put(j Job) error {
 
 // Get peeks a job from the queue.
 func (q *BeanstalkQueue) Get() (Message, error) {
-	id, payload, err := q.tset.Reserve(beanstalkTimeout)
+	id, payload, err := q.tset.Reserve(BeanstalkTimeout)
 	if err != nil {
 		if cerr, ok := err.(beanstalk.ConnError); ok && cerr.Err == beanstalk.ErrTimeout {
 			return nil, &Error{Err: "timeout", IsTimeout: true}
@@ -139,7 +140,7 @@ func (q *BeanstalkQueue) Delete(m Message) error {
 // Reject rejects the job marking it as failed.
 func (q *BeanstalkQueue) Reject(m Message) error {
 	if env, ok := m.(*beanstalkMessage); ok {
-		return q.conn.Bury(env.ID, q.prio)
+		return q.conn.Bury(env.ID, q.Prio)
 	}
 
 	return NewErrorFmt("bad envelope: %v", m)
@@ -154,7 +155,7 @@ func (q *BeanstalkQueue) Size() (uint64, error) {
 		return 0, err
 	}
 
-	if v, ok := dict[beanstalkReady]; !ok {
+	if v, ok := dict[beanstalkReadyKey]; !ok {
 		return 0, NewErrorFmt("bad dict %v", v)
 	} else {
 		size, err = strconv.ParseUint(v, 10, 64)
