@@ -12,12 +12,12 @@ func NewEnvelope(body []byte) (*Envelope, error) {
 	return &Envelope{data: &data{json}}, nil
 }
 
-func (m *Envelope) Type() string {
-	return m.Get("type").MustString("")
+func (e *Envelope) Type() string {
+	return e.Get("type").MustString("")
 }
 
-func (m *Envelope) Args() *Args {
-	if args, ok := m.CheckGet("args"); ok {
+func (e *Envelope) Args() *Args {
+	if args, ok := e.CheckGet("args"); ok {
 		return &Args{&data{args}}
 	} else {
 		json, _ := toJson([]byte("[]"))
