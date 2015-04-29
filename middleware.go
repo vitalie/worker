@@ -26,3 +26,10 @@ func (m middleware) Exec(sw StatusWriter, fact string, args *Args) {
 func CommonStack() []Handler {
 	return []Handler{NewRecovery(), NewLogger()}
 }
+
+// AirbrakeStack is used to configure default middleware
+// using Airbrake middleware instead of Recovery,
+// configured middlewares: Airbreak, Logger.
+func AirbreakStack(id int64, key, env string) []Handler {
+	return []Handler{NewAirbrake(id, key, env), NewLogger()}
+}
