@@ -85,8 +85,8 @@ vitalie@black:~/tmp$ go run t.go
 
 ## Credits
 
-- [@codegangsta](https://github.com/codegangsta)
-- [@jrallison](https://github.com/jrallison)
+- [codegangsta](https://github.com/codegangsta)
+- [jrallison](https://github.com/jrallison)
 
 ## Contributing
 
