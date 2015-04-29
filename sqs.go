@@ -33,8 +33,9 @@ func newSQSMessage(msg *sqs.Message, payload []byte) (*sqsMessage, error) {
 	return benv, nil
 }
 
-// SQSQueue represents a SQS queue, the queue should be configured
-// to use redrive policy to move the failed jobs to a dead letter queue.
+// SQSQueue represents a Queue implementation for Amazon SQS service.
+// The Amazon queue should be configured to move failed jobs to
+// another queue through redrive policy mecanism.
 type SQSQueue struct {
 	name   string     // AWS SQS queue name.
 	queue  *sqs.Queue // AWS SQS Queue reference.
