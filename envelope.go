@@ -24,3 +24,11 @@ func (e *Envelope) Args() *Args {
 		return &Args{&data{json}}
 	}
 }
+
+func (e *Envelope) String() string {
+	if e == nil {
+		return "<nil>"
+	}
+
+	return e.Type() + "(" + e.Args().String() + ")"
+}
