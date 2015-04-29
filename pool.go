@@ -3,9 +3,7 @@ package worker
 import (
 	"log"
 	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 
 	"golang.org/x/net/context"
 )
@@ -13,11 +11,6 @@ import (
 const (
 	DefaultWorkersCount = 10
 )
-
-type response struct {
-	Msg Message
-	Err error
-}
 
 // Pool represents a pool of workers connected to a queue.
 type Pool struct {
@@ -28,20 +21,6 @@ type Pool struct {
 	handlers   []Handler
 	mux        map[string]Factory
 	logger     *log.Logger
-}
-
-// SetQueue assigns a custom queue to worker pool.
-func SetQueue(q Queue) func(*Pool) {
-	return func(p *Pool) {
-		p.queue = q
-	}
-}
-
-// SetWorkers configures the pool concurrency.
-func SetWorkers(n int) func(*Pool) {
-	return func(p *Pool) {
-		p.count = n
-	}
 }
 
 // NewPool returns a new Pool instance.
@@ -113,7 +92,7 @@ func (p *Pool) Run(ctx context.Context) error {
 	var wg sync.WaitGroup
 
 	// Handle unix signals.
-	sig := p.trap()
+	sig := trap()
 
 	ctx, cancel := context.WithCancel(ctx)
 
@@ -140,6 +119,7 @@ func (p *Pool) Run(ctx context.Context) error {
 	case <-ctx.Done():
 		err = ctx.Err()
 	case <-sig:
+		p.logger.Println("Quit signal received ...")
 		cancel()
 	}
 
@@ -150,13 +130,15 @@ func (p *Pool) Run(ctx context.Context) error {
 	return err
 }
 
+// master polls the input queue sending jobs to workers through a blocking channel.
 func (p *Pool) master(ctx context.Context, c chan<- Message) {
+	qs := newQueueService(p.queue)
 	var r *response
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case r = <-p.get():
+		case r = <-qs.get():
 		}
 
 		if r.Err != nil {
@@ -227,48 +209,4 @@ func (p *Pool) execute(fact string, args *Args) error {
 	}
 
 	return nil
-}
-
-// trap traps OS signals to allow clean exit.
-func (p *Pool) trap() <-chan struct{} {
-	out := make(chan struct{}, 1)
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, syscall.SIGUSR1, syscall.SIGINT, syscall.SIGTERM)
-
-	go func() {
-		defer close(out)
-		for s := range signals {
-			switch s {
-			case syscall.SIGINT, syscall.SIGUSR1, syscall.SIGTERM:
-				p.logger.Println("Quit signal received ...")
-				out <- struct{}{}
-				return
-			}
-		}
-	}()
-
-	return out
-}
-
-// get service peeks a message from queue and
-// returns it through a channel without blocking
-// the caller.
-func (p *Pool) get() <-chan *response {
-	// Buffered channel to avoid goroutine leaking.
-	out := make(chan *response, 1)
-
-	// Start a gorouting to avoid blocking.
-	go func() {
-		defer close(out)
-
-		msg, err := p.queue.Get()
-		if err != nil {
-			out <- &response{Err: err}
-			return
-		}
-
-		out <- &response{Msg: msg}
-	}()
-
-	return out
 }
