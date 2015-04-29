@@ -2,7 +2,7 @@
 
 An experimental background jobs processor. The following queues are supported:
 
-* [AWS SQS](http://godoc.org/github.com/vitalie/worker#SQSQueue "Amazon SQS")
+* [AWS SQS](http://godoc.org/github.com/vitalie/worker#SQSQueue "Amazon Simple Queue Service (SQS)")
 * [Beanstalk](http://godoc.org/github.com/vitalie/worker#BeanstalkQueue)
 * [Memory](http://godoc.org/github.com/vitalie/worker#MemoryQueue)
 
