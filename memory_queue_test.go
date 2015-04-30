@@ -15,7 +15,7 @@ func TestMemoryQueue(t *testing.T) {
 		t.Error(err)
 	}
 
-	size, err := q.Size()
+	size, _, err := q.Size()
 	if err != nil {
 		t.Error(err)
 	}
@@ -46,7 +46,7 @@ func TestMemoryQueue(t *testing.T) {
 		t.Error(err)
 	}
 
-	size, err = q.Size()
+	size, _, err = q.Size()
 	if err != nil {
 		t.Error(err)
 	}

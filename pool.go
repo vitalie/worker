@@ -80,8 +80,9 @@ func (p *Pool) build(hs []Handler) middleware {
 func (p *Pool) last() middleware {
 	return middleware{
 		HandlerFunc(func(sw StatusWriter, fact string, args *Args, next JobRunner) {
-			err := p.execute(fact, args)
-			sw.Set(err)
+			if err := p.execute(fact, args); err != nil {
+				sw.Set(err)
+			}
 		}),
 		&middleware{},
 	}

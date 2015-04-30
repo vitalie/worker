@@ -15,7 +15,8 @@ const (
 	BeanstalkTube = "default"   // Beanstalk default queue.
 	BeanstalkPrio = 100         // Beanstalk default job priority.
 
-	beanstalkReadyKey = "current-jobs-ready" // Beanstalk key for queue size.
+	beanstalkReadyKey  = "current-jobs-ready"
+	beanstalkFailedKey = "current-jobs-buried"
 )
 
 var (
@@ -147,22 +148,33 @@ func (q *BeanstalkQueue) Reject(m Message) error {
 }
 
 // Size returns the queue size, only ready jobs are returned.
-func (q *BeanstalkQueue) Size() (uint64, error) {
-	var size uint64
-
-	dict, err := q.tube.Stats()
-	if err != nil {
-		return 0, err
-	}
-
-	if v, ok := dict[beanstalkReadyKey]; !ok {
-		return 0, NewErrorFmt("bad dict %v", v)
-	} else {
-		size, err = strconv.ParseUint(v, 10, 64)
-		if err != nil {
-			return 0, err
+func (q *BeanstalkQueue) Size() (uint64, uint64, error) {
+	parse := func(key string, dict map[string]string) (uint64, error) {
+		if v, ok := dict[key]; !ok {
+			return 0, NewErrorFmt("bad dict %v", v)
+		} else {
+			n, err := strconv.ParseUint(v, 10, 64)
+			if err != nil {
+				return 0, err
+			}
+			return n, nil
 		}
 	}
 
-	return size, nil
+	dict, err := q.tube.Stats()
+	if err != nil {
+		return 0, 0, err
+	}
+
+	ready, err := parse(beanstalkReadyKey, dict)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	failed, err := parse(beanstalkFailedKey, dict)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return ready, failed, nil
 }

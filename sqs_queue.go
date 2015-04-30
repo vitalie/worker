@@ -38,7 +38,9 @@ func newSQSMessage(msg *sqs.Message, payload []byte) (*sqsMessage, error) {
 // another queue through redrive policy mecanism.
 type SQSQueue struct {
 	name   string     // AWS SQS queue name.
-	queue  *sqs.Queue // AWS SQS Queue reference.
+	dead   string     // AWS SQS dead letter queue.
+	ready  *sqs.Queue // AWS SQS ready queue.
+	failed *sqs.Queue // AWS SQS dead letter queue.
 	region aws.Region // AWS region.
 }
 
@@ -46,7 +48,13 @@ type SQSQueue struct {
 func NewSQSQueue(name string, opts ...func(*SQSQueue)) (Queue, error) {
 	q := &SQSQueue{
 		name:   name,
+		dead:   name + "_dead",
 		region: aws.USEast,
+	}
+
+	// Apply options.
+	for _, opt := range opts {
+		opt(q)
 	}
 
 	auth, err := aws.EnvAuth()
@@ -56,12 +64,21 @@ func NewSQSQueue(name string, opts ...func(*SQSQueue)) (Queue, error) {
 
 	// Get a reference to SQS region.
 	service := sqs.New(auth, q.region)
-	queue, err := service.GetQueue(name)
+
+	// Get reference to main queue.
+	ready, err := service.GetQueue(q.name)
 	if err != nil {
 		return nil, err
 	}
 
-	q.queue = queue
+	// Get reference to dead letter queue.
+	failed, err := service.GetQueue(q.dead)
+	if err != nil {
+		return nil, err
+	}
+
+	q.ready = ready
+	q.failed = failed
 
 	return q, nil
 }
@@ -83,13 +100,13 @@ func (q *SQSQueue) Put(j Job) error {
 		return err
 	}
 
-	_, err = q.queue.SendMessage(string(payload))
+	_, err = q.ready.SendMessage(string(payload))
 	return err
 }
 
 // Get peeks a message from the queue.
 func (q *SQSQueue) Get() (Message, error) {
-	resp, err := q.queue.ReceiveMessage(1)
+	resp, err := q.ready.ReceiveMessage(1)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +131,7 @@ func (q *SQSQueue) Delete(msg Message) error {
 		return NewErrorFmt("bad sqs envelope")
 	}
 
-	_, err := q.queue.DeleteMessage(env.Msg)
+	_, err := q.ready.DeleteMessage(env.Msg)
 	return err
 }
 
@@ -124,20 +141,39 @@ func (q *SQSQueue) Reject(msg Message) error {
 }
 
 // Size returns aproximate queue size.
-func (q *SQSQueue) Size() (uint64, error) {
-	resp, err := q.queue.GetQueueAttributes(sqsSizeKey)
+func (q *SQSQueue) Size() (uint64, uint64, error) {
+	queueSize := func(q *sqs.Queue) (uint64, error) {
+		resp, err := q.GetQueueAttributes(sqsSizeKey)
+		if err != nil {
+			return 0, err
+		}
+
+		if len(resp.Attributes) == 0 {
+			return 0, NewError("bad attribute size")
+		}
+
+		attr := resp.Attributes[0]
+		if attr.Name != sqsSizeKey {
+			return 0, NewError("bad attribute")
+		}
+
+		size, err := strconv.ParseUint(attr.Value, 10, 64)
+		if err != nil {
+			return 0, err
+		}
+
+		return size, nil
+	}
+
+	ready, err := queueSize(q.ready)
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
-	if len(resp.Attributes) == 0 {
-		return 0, NewError("bad attribute size")
+	failed, err := queueSize(q.failed)
+	if err != nil {
+		return 0, 0, err
 	}
 
-	attr := resp.Attributes[0]
-	if attr.Name != sqsSizeKey {
-		return 0, NewError("bad attribute")
-	}
-
-	return strconv.ParseUint(attr.Value, 10, 64)
+	return ready, failed, nil
 }

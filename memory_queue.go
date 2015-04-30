@@ -104,17 +104,19 @@ func (q *MemoryQueue) Reject(msg Message) error {
 
 	m, l := q.remove(env.ID, q.ready)
 	q.ready = l
-
 	q.failed = append(q.failed, m)
+
 	return nil
 }
 
-func (q *MemoryQueue) Size() (uint64, error) {
+func (q *MemoryQueue) Size() (uint64, uint64, error) {
 	q.Lock()
 	defer q.Unlock()
 
-	size := len(q.ready)
-	return uint64(size), nil
+	ready := len(q.ready)
+	failed := len(q.failed)
+
+	return uint64(ready), uint64(failed), nil
 }
 
 func (q *MemoryQueue) remove(id uint64, list []*memoryMessage) (*memoryMessage, []*memoryMessage) {

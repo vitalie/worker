@@ -18,7 +18,7 @@ func TestBeanstalkQueue(t *testing.T) {
 		t.Error(err)
 	}
 
-	s1, err := q.Size()
+	s1, _, err := q.Size()
 	if err != nil {
 		t.Error(err)
 	}
@@ -28,7 +28,7 @@ func TestBeanstalkQueue(t *testing.T) {
 		t.Error(err)
 	}
 
-	s2, err := q.Size()
+	s2, _, err := q.Size()
 	if err != nil {
 		t.Error(err)
 	}

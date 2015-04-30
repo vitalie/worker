@@ -14,7 +14,7 @@ type Queue interface {
 	Get() (Message, error)
 	Delete(Message) error
 	Reject(Message) error
-	Size() (uint64, error)
+	Size() (uint64, uint64, error)
 }
 
 // Payload represents a queue message payload.

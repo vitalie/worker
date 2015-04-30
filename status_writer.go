@@ -1,7 +1,7 @@
 package worker
 
 type StatusWriter interface {
-	Set(error)
+	Set(interface{})
 	Get() error
 	OK() bool
 }
@@ -14,8 +14,12 @@ func NewStatusWriter() StatusWriter {
 	return &statusWriter{}
 }
 
-func (sw *statusWriter) Set(err error) {
-	sw.Err = err
+func (sw *statusWriter) Set(err interface{}) {
+	if cerr, ok := err.(error); ok {
+		sw.Err = cerr
+	} else {
+		sw.Err = NewErrorFmt("%v", err)
+	}
 }
 
 func (sw *statusWriter) Get() error {

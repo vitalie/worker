@@ -75,4 +75,17 @@ func TestPool(t *testing.T) {
 			log.Printf("sum(%d, %d) = %d\n", tt.x, tt.y, got)
 		}
 	}
+
+	ready, failed, err := q.Size()
+	if err != nil {
+		t.Error(err)
+	}
+
+	if ready != 0 {
+		t.Errorf("expecting size to be %v, got %v", 0, ready)
+	}
+
+	if failed != 1 {
+		t.Errorf("expecting failed to be %v, got %v", 1, failed)
+	}
 }
