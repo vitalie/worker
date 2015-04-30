@@ -29,6 +29,7 @@ func (r *Recovery) Exec(sw StatusWriter, fact string, args *Args, next JobRunner
 
 			f := "%s: PANIC: %s\n%s"
 			r.Logger.Printf(f, jinfo, err, stack)
+			sw.Set(err)
 		}
 	}()
 

@@ -37,6 +37,7 @@ func (r *Airbrake) Exec(sw StatusWriter, fact string, args *Args, next JobRunner
 
 			f := "%s: PANIC: %s\n%s"
 			r.Logger.Printf(f, jinfo, err, stack)
+			sw.Set(err)
 
 			go func() {
 				if err := r.Airbrake.Notify(f, &http.Request{}); err != nil {
