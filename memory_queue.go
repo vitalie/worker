@@ -28,13 +28,15 @@ func newMemoryMessage(id uint64, payload []byte) (*memoryMessage, error) {
 // this queue is used mainly for unit tests.
 type MemoryQueue struct {
 	sync.Mutex
-	size uint64
-	l    []*memoryMessage
+	counter uint64
+	ready   []*memoryMessage
+	failed  []*memoryMessage
 }
 
 func NewMemoryQueue() Queue {
 	return &MemoryQueue{
-		l: []*memoryMessage{},
+		ready:  []*memoryMessage{},
+		failed: []*memoryMessage{},
 	}
 }
 
@@ -57,12 +59,12 @@ func (q *MemoryQueue) Put(j Job) error {
 		return err
 	}
 
-	q.size++
-	msg, err := newMemoryMessage(q.size, payload)
+	q.counter++
+	msg, err := newMemoryMessage(q.counter, payload)
 	if err != nil {
 		return err
 	}
-	q.l = append(q.l, msg)
+	q.ready = append(q.ready, msg)
 
 	return nil
 }
@@ -71,12 +73,12 @@ func (q *MemoryQueue) Get() (Message, error) {
 	q.Lock()
 	defer q.Unlock()
 
-	if len(q.l) == 0 {
+	if len(q.ready) == 0 {
 		return nil, &Error{Err: "timeout", IsTimeout: true}
 	}
 
 	var m Message
-	m, q.l = q.l[len(q.l)-1], q.l[:len(q.l)-1]
+	m, q.ready = q.ready[len(q.ready)-1], q.ready[:len(q.ready)-1]
 	return m, nil
 }
 
@@ -89,24 +91,43 @@ func (q *MemoryQueue) Delete(msg Message) error {
 		return NewErrorFmt("bad envelope: %v", msg)
 	}
 
-	var lst []Message
-	for _, i := range q.l {
-		if i.ID != env.ID {
-			lst = append(lst, i)
-		}
-	}
+	_, q.ready = q.remove(env.ID, q.ready)
 
 	return nil
 }
 
 func (q *MemoryQueue) Reject(msg Message) error {
-	return q.Delete(msg)
+	env, ok := msg.(*memoryMessage)
+	if !ok {
+		return NewErrorFmt("bad envelope: %v", msg)
+	}
+
+	m, l := q.remove(env.ID, q.ready)
+	q.ready = l
+
+	q.failed = append(q.failed, m)
+	return nil
 }
 
 func (q *MemoryQueue) Size() (uint64, error) {
 	q.Lock()
 	defer q.Unlock()
 
-	size := len(q.l)
+	size := len(q.ready)
 	return uint64(size), nil
+}
+
+func (q *MemoryQueue) remove(id uint64, list []*memoryMessage) (*memoryMessage, []*memoryMessage) {
+	var m *memoryMessage
+	var l []*memoryMessage
+
+	for _, i := range list {
+		if i.ID != id {
+			l = append(l, i)
+		} else {
+			m = i
+		}
+	}
+
+	return m, l
 }
