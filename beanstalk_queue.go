@@ -20,8 +20,8 @@ const (
 )
 
 var (
-	BeanstalkTimeout time.Duration = 1 * time.Second  // Beanstalk reserve timeout.
-	BeanstalkTTR     time.Duration = 60 * time.Second // Beanstalk default TTR (time to run).
+	BeanstalkTimeout time.Duration = 1 * time.Second // Beanstalk reserve timeout.
+	BeanstalkTTR     time.Duration = 2 * DefaultTTR  // Beanstalk default TTR (time to run).
 )
 
 // beanstalkMessage represents data returned by Reserve.

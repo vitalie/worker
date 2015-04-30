@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"sync"
+	"time"
 
 	"golang.org/x/net/context"
 )
@@ -12,10 +13,15 @@ const (
 	DefaultWorkersCount = 10
 )
 
+var (
+	DefaultTTR time.Duration = 2 * time.Minute
+)
+
 // Pool represents a pool of workers connected to a queue.
 type Pool struct {
-	count int   // workers count
-	queue Queue // input queue
+	queue Queue         // input queue
+	count int           // workers count
+	ttr   time.Duration // Time to run.
 
 	middleware middleware
 	handlers   []Handler
@@ -26,8 +32,9 @@ type Pool struct {
 // NewPool returns a new Pool instance.
 func NewPool(opts ...func(*Pool)) *Pool {
 	pool := &Pool{
-		count:    DefaultWorkersCount,
 		queue:    NewMemoryQueue(),
+		count:    DefaultWorkersCount,
+		ttr:      DefaultTTR,
 		mux:      map[string]Factory{},
 		logger:   log.New(os.Stdout, "[worker] ", 0),
 		handlers: CommonStack(),
@@ -169,9 +176,15 @@ func (p *Pool) worker(ctx context.Context, in <-chan Message) {
 			done <- struct{}{}
 		}()
 
+		ctx, cancel := context.WithTimeout(ctx, p.ttr)
+		defer cancel()
+
 		// Wait job completion.
 		select {
 		case <-ctx.Done():
+			if err := p.queue.Reject(msg); err != nil {
+				p.logger.Println("Reject failure:", msg, err)
+			}
 			return
 		case <-done:
 			if status.OK() {
