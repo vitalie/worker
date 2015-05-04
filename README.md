@@ -83,6 +83,10 @@ vitalie@black:~/tmp$ go run t.go
 [worker] Shutdown completed!
 ```
 
+## TODO
+
+- Job scheduler
+
 ## Credits
 
 - [codegangsta](https://github.com/codegangsta)
