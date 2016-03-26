@@ -2,11 +2,10 @@ package worker
 
 import (
 	"log"
-	"net/http"
 	"os"
 	"runtime"
 
-	"gopkg.in/airbrake/gobrake.v1"
+	"gopkg.in/airbrake/gobrake.v2"
 )
 
 type Airbrake struct {
@@ -18,7 +17,10 @@ type Airbrake struct {
 
 func NewAirbrake(id int64, key, env string) *Airbrake {
 	airbrake := gobrake.NewNotifier(id, key)
-	airbrake.SetContext("environment", env)
+	airbrake.AddFilter(func(notice *gobrake.Notice) *gobrake.Notice {
+		notice.Context["environment"] = env
+		return notice
+	})
 
 	return &Airbrake{
 		Logger:    log.New(os.Stdout, "[worker] ", 0),
@@ -29,6 +31,9 @@ func NewAirbrake(id int64, key, env string) *Airbrake {
 }
 
 func (r *Airbrake) Exec(sw StatusWriter, fact string, args *Args, next JobRunner) {
+	// Deferred function calls are executed in Last In First Out order
+	// after the surrounding function returns.
+	defer r.Airbrake.Flush()
 	defer func() {
 		if err := recover(); err != nil {
 			jinfo := fact + " " + args.String()
@@ -40,9 +45,7 @@ func (r *Airbrake) Exec(sw StatusWriter, fact string, args *Args, next JobRunner
 			sw.Set(err)
 
 			go func() {
-				if err := r.Airbrake.Notify(f, &http.Request{}); err != nil {
-					r.Logger.Println("notify error:", err)
-				}
+				r.Airbrake.Notify(f, nil)
 			}()
 		}
 	}()
