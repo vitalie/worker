@@ -68,6 +68,11 @@ func NewBeanstalkQueue(opts ...func(*BeanstalkQueue)) (Queue, error) {
 		TTR:  BeanstalkTTR,
 	}
 
+	// Apply options.
+	for _, opt := range opts {
+		opt(q)
+	}
+
 	addr := net.JoinHostPort(q.Host, q.Port)
 
 	conn, err := beanstalk.Dial("tcp", addr)
