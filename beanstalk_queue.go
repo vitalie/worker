@@ -141,7 +141,7 @@ func (q *BeanstalkQueue) Delete(m Message) error {
 // Reject rejects the job marking it as failed.
 func (q *BeanstalkQueue) Reject(m Message) error {
 	if env, ok := m.(*beanstalkMessage); ok {
-		return q.conn.Bury(env.ID, q.Prio)
+		return q.conn.Bury(env.ID, q.Prio+1)
 	}
 
 	return NewErrorFmt("bad envelope: %v", m)
