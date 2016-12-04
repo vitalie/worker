@@ -12,3 +12,7 @@ type Job interface {
 	Runner
 	Factory
 }
+
+type Priority interface {
+	Prio() uint32
+}

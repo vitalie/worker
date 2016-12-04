@@ -93,6 +93,8 @@ func NewBeanstalkQueue(opts ...func(*BeanstalkQueue)) (Queue, error) {
 
 // Put puts the job in the queue.
 func (q *BeanstalkQueue) Put(j Job) error {
+	prio := q.Prio
+
 	typ, err := StructType(j)
 	if err != nil {
 		return err
@@ -108,7 +110,11 @@ func (q *BeanstalkQueue) Put(j Job) error {
 		return err
 	}
 
-	_, err = q.tube.Put(body, q.Prio, 0, q.TTR)
+	if v, ok := j.(Priority); ok {
+		prio = v.Prio()
+	}
+
+	_, err = q.tube.Put(body, prio, 0, q.TTR)
 	if err != nil {
 		return err
 	}
