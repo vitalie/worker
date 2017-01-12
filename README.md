@@ -17,10 +17,10 @@ $ go get -u github.com/vitalie/worker
 package main
 
 import (
+	"context"
 	"log"
 
 	"github.com/vitalie/worker"
-	"golang.org/x/net/context"
 )
 
 // addJob represents a simple background job.

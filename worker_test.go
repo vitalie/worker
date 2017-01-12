@@ -1,11 +1,11 @@
 package worker_test
 
 import (
+	"context"
 	"log"
 	"testing"
 
 	"github.com/vitalie/worker"
-	"golang.org/x/net/context"
 )
 
 var c chan int = make(chan int)
