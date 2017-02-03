@@ -14,7 +14,7 @@ const (
 )
 
 var (
-	DefaultTTR time.Duration = 5 * time.Minute
+	DefaultTTR time.Duration = 10 * time.Minute
 )
 
 // Pool represents a pool of workers connected to a queue.
