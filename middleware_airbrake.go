@@ -16,7 +16,16 @@ type Airbrake struct {
 }
 
 func NewAirbrake(id int64, key, env string) *Airbrake {
-	airbrake := gobrake.NewNotifier(id, key)
+	return NewAirbrakeWithHost(id, key, env, "")
+}
+
+func NewAirbrakeWithHost(id int64, key, env, host string) *Airbrake {
+	airbrake := gobrake.NewNotifierWithOptions(&gobrake.NotifierOptions{
+		ProjectId:   id,
+		ProjectKey:  key,
+		Environment: env,
+		Host:        host,
+	})
 	airbrake.AddFilter(func(notice *gobrake.Notice) *gobrake.Notice {
 		notice.Context["environment"] = env
 		return notice
