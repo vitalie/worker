@@ -5,7 +5,7 @@ import (
 	"os"
 	"runtime"
 
-	"gopkg.in/airbrake/gobrake.v2"
+	"github.com/airbrake/gobrake/v4"
 )
 
 type Airbrake struct {
