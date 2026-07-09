@@ -44,9 +44,10 @@ func (r *Airbrake) Exec(sw StatusWriter, fact string, args *Args, next JobRunner
 			r.Logger.Printf(f, jinfo, err, stack)
 			sw.Set(err)
 
-			go func() {
-				r.Airbrake.Notify(f, nil)
-			}()
+			notice := r.Airbrake.Notice(err, nil, 1)
+			notice.Params["job_type"] = fact
+			notice.Params["job_args"] = args
+			r.Airbrake.SendNoticeAsync(notice)
 		}
 	}()
 
