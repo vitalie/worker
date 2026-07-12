@@ -103,6 +103,7 @@ func (p *Pool) Run(ctx context.Context) error {
 	sig := trap()
 
 	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
 	// Fan-out channel.
 	c := make(chan Message)
